@@ -1,0 +1,88 @@
+// src/router/index.js
+import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "../store/auth";
+
+const routes = [
+  {
+    path: "/login",
+    name: "Login",
+    component: () => import("../views/Login.vue"),
+  },
+  {
+    path: "/teacher",
+    component: () => import("../views/teacher/Layout.vue"),
+    meta: { requiresAuth: true, role: "teacher" },
+    children: [
+      {
+        path: "topics",
+        name: "TopicManagement",
+        component: () => import("../views/teacher/TopicManagement.vue"),
+      },
+    ],
+  },
+  // 根路径重定向
+  {
+    path: "/",
+    redirect: "/login",
+  },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+
+  // --- 加入诊断日志，这是我们的“监视器” ---
+  console.log("--- 路由守卫触发 ---");
+  console.log("尝试跳转到:", to.path);
+  console.log("是否需要认证:", to.meta.requiresAuth);
+  console.log("Pinia中用户是否登录:", authStore.isAuthenticated);
+  console.log("Pinia中的用户信息:", JSON.parse(JSON.stringify(authStore.user))); // 使用JSON方法确保能看到完整对象
+
+  if (authStore.user) {
+    console.log("Pinia中的用户角色:", authStore.user.role);
+    console.log("目标页面要求角色:", to.meta.role);
+    console.log("角色是否匹配:", authStore.user.role === to.meta.role);
+  }
+  console.log("----------------------");
+  // --- 日志结束 ---
+
+  const isAuthenticated = authStore.isAuthenticated;
+  const userRole = authStore.user?.role;
+
+  // 目标页面需要认证
+  if (to.meta.requiresAuth) {
+    // 用户未登录 -> 跳转到登录页
+    if (!isAuthenticated) {
+      next({ name: "Login", query: { redirect: to.fullPath } }); // 推荐加上 redirect query
+    }
+    // 用户已登录，但角色不匹配
+    else if (to.meta.role && userRole !== to.meta.role) {
+      // 可以跳转到 403 页面或首页，这里简单处理为登录页
+      next({ name: "Login" });
+    }
+    // 验证通过
+    else {
+      next();
+    }
+  }
+  // 目标页面是登录页，但用户已经登录了
+  else if (to.name === 'Login' && isAuthenticated) {
+    // 根据角色跳转到对应的首页，避免重复登录
+    if (userRole === 'teacher') {
+      next({ path: '/teacher/topics' });
+    } else {
+      next({ path: '/' }); // 或其他默认页
+    }
+  }
+  // 其他情况（访问无需认证的页面）
+  else {
+    next();
+  }
+});
+
+export default router;

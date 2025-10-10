@@ -5,10 +5,6 @@ const User = require("../models/User");
 exports.protect = async (req, res, next) => {
   let token;
 
-  if (!token) {
-    return res.status(401).json({ message: "没有提供Token，认证失败" });
-  }
-
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
@@ -35,6 +31,10 @@ exports.protect = async (req, res, next) => {
       res.status(401).json({ message: "Token无效，认证失败" });
     }
   }
+
+  if (!token) {
+    return res.status(401).json({ message: "没有提供Token，认证失败" });
+  }
 };
 
 // 限定角色的中间件
@@ -44,4 +44,13 @@ exports.isTeacher = (req, res, next) => {
   } else {
     res.status(403).json({ message: "权限不足，需要教师角色" });
   }
+};
+
+// 新增：限定学生角色的中间件
+exports.isStudent = (req, res, next) => {
+    if (req.user && req.user.role === 'student') {
+        next();
+    } else {
+        res.status(403).json({ message: '权限不足，需要学生角色' });
+    }
 };

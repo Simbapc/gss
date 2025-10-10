@@ -71,12 +71,12 @@ router.beforeEach((to, from, next) => {
     }
   }
   // 目标页面是登录页，但用户已经登录了
-  else if (to.name === 'Login' && isAuthenticated) {
+  else if (to.name === "Login" && isAuthenticated) {
     // 根据角色跳转到对应的首页，避免重复登录
-    if (userRole === 'teacher') {
-      next({ path: '/teacher/topics' });
+    if (userRole === "teacher") {
+      next({ path: "/teacher/topics" });
     } else {
-      next({ path: '/' }); // 或其他默认页
+      next({ path: "/" }); // 或其他默认页
     }
   }
   // 其他情况（访问无需认证的页面）

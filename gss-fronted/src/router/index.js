@@ -20,6 +20,28 @@ const routes = [
       },
     ],
   },
+  {
+    path: "/student",
+    component: () => import("../views/student/Layout.vue"),
+    meta: { requiresAuth: true, role: "student" },
+    children: [
+      {
+        path: "topic-list",
+        name: "StudentTopicList",
+        component: () => import("../views/student/TopicList.vue"),
+      },
+      {
+        path: "my-selection",
+        name: "MySelection",
+        component: () => import("../views/student/MySelection.vue"),
+      },
+      // 如果学生直接访问 /student，重定向到课题列表
+      {
+        path: "",
+        redirect: "topic-list",
+      },
+    ],
+  },
   // 根路径重定向
   {
     path: "/",

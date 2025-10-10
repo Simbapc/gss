@@ -1,4 +1,5 @@
 const Topic = require("../models/Topic");
+const User = require('../models/User'); // 引入User
 
 // [教师] 创建新课题
 exports.createTopic = async (req, res) => {
@@ -74,5 +75,23 @@ exports.deleteTopic = async (req, res) => {
     res.status(200).json({ message: "课题删除成功" });
   } catch (error) {
     res.status(500).json({ message: "服务器错误", error: error.message });
+  }
+};
+
+
+exports.getAvailableTopics = async (req, res) => {
+  try {
+    const topics = await Topic.findAll({
+      where: { status: 'open' },
+      include: {
+        model: User,
+        as: 'teacher',
+        attributes: ['name'] // 只包含教师的姓名
+      },
+      order: [['createdAt', 'DESC']]
+    });
+    res.status(200).json(topics);
+  } catch (error) {
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };

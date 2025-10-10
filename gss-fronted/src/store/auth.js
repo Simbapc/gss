@@ -28,11 +28,18 @@ export const useAuthStore = defineStore("auth", {
         localStorage.setItem("user", JSON.stringify(user));
 
         // 根据角色跳转
-        if (user.role === "teacher") {
-          router.push("/teacher/topics");
-        } else {
-          // 为其他角色预留
-          router.push("/");
+        if (user && user.role) {
+          switch (user.role) {
+            case "teacher":
+              await router.push("/teacher/topics");
+              break;
+            case "student":
+              // 学生登录后跳转到课题列表页
+              await router.push("/student/topic-list");
+              break;
+            default:
+              await router.push("/");
+          }
         }
       } catch (error) {
         console.error("Login failed:", error);

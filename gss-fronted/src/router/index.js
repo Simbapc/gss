@@ -1,7 +1,7 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../store/auth";
-
+console.log("--- router/index.js 开始执行 ---");
 const routes = [
   {
     path: "/login",
@@ -17,6 +17,40 @@ const routes = [
         path: "topics",
         name: "TopicManagement",
         component: () => import("../views/teacher/TopicManagement.vue"),
+      },
+      // --- 新增：教师的选题管理页面 ---
+      {
+        path: "selections",
+        name: "SelectionManagement",
+        component: () => import("../views/teacher/SelectionManagement.vue"),
+      },
+    ],
+  },
+  // --- 新增：管理员路由 ---
+  {
+    path: "/admin",
+    component: () => import("../views/admin/Layout.vue"),
+    meta: { requiresAuth: true, role: "admin" },
+    children: [
+      {
+        path: "users",
+        name: "UserManagement",
+        component: () => import("../views/admin/UserManagement.vue"),
+      },
+      {
+        path: "topics",
+        name: "AdminTopicList",
+        component: () => import("../views/admin/TopicList.vue"),
+      },
+      {
+        path: "selections",
+        name: "AdminSelectionList",
+        component: () => import("../views/admin/SelectionList.vue"),
+      },
+      // 如果管理员直接访问 /admin，重定向到用户管理页
+      {
+        path: "",
+        redirect: "users",
       },
     ],
   },
@@ -46,6 +80,11 @@ const routes = [
   {
     path: "/",
     redirect: "/login",
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    redirect: "/",
   },
 ];
 

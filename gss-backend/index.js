@@ -8,6 +8,7 @@ const sequelize = require("./config/database");
 const authRoutes = require("./routes/authRoutes");
 const topicRoutes = require("./routes/topicRoutes"); // 引入topic路由
 const selectionRoutes = require("./routes/selectionRoutes"); // 引入selection路由
+const adminRoutes = require('./routes/adminRoutes');
 
 // 引入模型以同步关联关系
 require("./models/User");
@@ -25,6 +26,9 @@ app.use(express.json()); // 解析JSON请求体
 app.use("/api/auth", authRoutes);
 app.use("/api/topics", topicRoutes); // 注册topic路由
 app.use("/api/selections", selectionRoutes); // 注册selection路由
+app.use('/api/admin', adminRoutes);
+
+
 
 // 测试数据库连接并启动服务器
 async function startServer() {

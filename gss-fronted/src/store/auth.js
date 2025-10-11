@@ -37,6 +37,10 @@ export const useAuthStore = defineStore("auth", {
               // 学生登录后跳转到课题列表页
               await router.push("/student/topic-list");
               break;
+            // --- 新增：管理员跳转逻辑 ---
+            case "admin":
+              await router.push("/admin/users");
+              break;
             default:
               await router.push("/");
           }

@@ -2,6 +2,13 @@
   <router-view />
 </template>
 
+<script setup>
+import { onMounted } from 'vue';
+console.log("--- App.vue script setup 执行 ---");
+onMounted(() => {
+  console.log("--- App.vue 已挂载 (mounted) ---");
+});
+</script>
 <style>
 /* 可以在此添加全局样式 */
 #app {

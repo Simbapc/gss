@@ -48,9 +48,18 @@ exports.isTeacher = (req, res, next) => {
 
 // 新增：限定学生角色的中间件
 exports.isStudent = (req, res, next) => {
-    if (req.user && req.user.role === 'student') {
+  if (req.user && req.user.role === "student") {
+    next();
+  } else {
+    res.status(403).json({ message: "权限不足，需要学生角色" });
+  }
+};
+
+// 新增：限定管理员角色的中间件
+exports.isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
         next();
     } else {
-        res.status(403).json({ message: '权限不足，需要学生角色' });
+        res.status(403).json({ message: '权限不足，需要管理员角色' });
     }
 };

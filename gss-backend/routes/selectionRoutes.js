@@ -1,13 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const selectionController = require("../controllers/selectionController");
-const { protect, isStudent } = require("../middleware/authMiddleware");
+const { protect, isStudent, isTeacher } = require("../middleware/authMiddleware");
 
-// 所有路由都需要学生登录
-router.use(protect, isStudent);
 
-router.post("/select/:topicId", selectionController.selectTopic);
-router.get("/my-selection", selectionController.getMySelection);
-router.delete("/cancel", selectionController.cancelSelection);
+router.post("/select/:topicId", protect, isStudent,selectionController.selectTopic);
+router.get("/my-selection", protect, isStudent, selectionController.getMySelection);
+router.delete("/cancel", protect, isStudent, selectionController.cancelSelection);
+
+// 教师路由
+router.get('/teacher/pending', protect, isTeacher, selectionController.getSelectionsForMyTopics);
+router.put('/teacher/review/:selectionId', protect, isTeacher, selectionController.reviewSelection);
 
 module.exports = router;

@@ -17,29 +17,48 @@
         <el-container>
             <el-header class="header">
                 <span>高校毕业生在线选题系统</span>
-                <div>
-                    <span>欢迎您, {{ authStore.user?.name }}</span>
-                    <el-button type="text" @click="handleLogout"
-                        style="color: white; margin-left: 15px;">退出登录</el-button>
-                </div>
+                <!-- 使用 Dropdown 组件 -->
+                <el-dropdown>
+                    <span class="el-dropdown-link">
+                        欢迎您, {{ authStore.user?.name }}
+                        <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                    </span>
+                    <template #dropdown>
+                        <el-dropdown-menu>
+                            <el-dropdown-item @click="openProfile">个人中心</el-dropdown-item>
+                            <el-dropdown-item divided @click="authStore.logout()">退出登录</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </template>
+                </el-dropdown>
             </el-header>
             <el-main>
                 <router-view />
             </el-main>
         </el-container>
     </el-container>
+    <ProfileEditor ref="profileEditorRef" />
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { useAuthStore } from '../../store/auth';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
+import { Document as ElIconDocument, Collection as ElIconCollection, ArrowDown } from '@element-plus/icons-vue';
 import { Tickets as ElIconTickets, DocumentChecked as ElIconDocumentChecked } from '@element-plus/icons-vue';
+import ProfileEditor from '../../components/ProfileEditor.vue'; // 引入组件
+
 
 const authStore = useAuthStore();
 const route = useRoute();
 
 const activeMenu = computed(() => route.path);
+
+const profileEditorRef = ref(null); // 创建 ref
+// 调用子组件的 open 方法
+const openProfile = () => {
+    profileEditorRef.value?.open();
+};
 
 const handleLogout = () => {
     authStore.logout();
@@ -65,5 +84,12 @@ const handleLogout = () => {
 
 .el-menu {
     border-right: none;
+}
+
+.el-dropdown-link {
+    cursor: pointer;
+    color: var(--el-color-primary-light-9);
+    display: flex;
+    align-items: center;
 }
 </style>

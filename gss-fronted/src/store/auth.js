@@ -57,5 +57,12 @@ export const useAuthStore = defineStore("auth", {
       localStorage.removeItem("user");
       router.push("/login");
     },
+    // 新增 action
+    updateUser(newUserInfo) {
+      // 只更新 store 中的用户信息，不改变 token
+      this.user = { ...this.user, ...newUserInfo };
+      // 同步更新 localStorage
+      localStorage.setItem("user", JSON.stringify(this.user));
+    },
   },
 });

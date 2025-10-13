@@ -24,9 +24,19 @@
             <el-header class="header">
                 <span>高校毕业生在线选题系统</span>
                 <div>
-                    <span>欢迎您, {{ authStore.user?.name }}</span>
-                    <el-button type="text" @click="handleLogout"
-                        style="color: white; margin-left: 15px;">退出登录</el-button>
+                    <!-- 使用 Dropdown 组件 -->
+                    <el-dropdown>
+                        <span class="el-dropdown-link">
+                            欢迎您, {{ authStore.user?.name }}
+                            <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                        </span>
+                        <template #dropdown>
+                            <el-dropdown-menu>
+                                <el-dropdown-item @click="openProfile">个人中心</el-dropdown-item>
+                                <el-dropdown-item divided @click="authStore.logout()">退出登录</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </template>
+                    </el-dropdown>
                 </div>
             </el-header>
             <el-main>
@@ -34,13 +44,18 @@
             </el-main>
         </el-container>
     </el-container>
+    <!-- 引入 ProfileEditor 组件 -->
+    <ProfileEditor ref="profileEditorRef" />
 </template>
 
 <script setup>
+import { ref } from 'vue';
 import { useAuthStore } from '../../store/auth';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
-import { Document as ElIconDocument, Finished as ElIconFinished } from '@element-plus/icons-vue';
+import { Document as ElIconDocument, Finished as ElIconFinished, ArrowDown } from '@element-plus/icons-vue';
+
+import ProfileEditor from '../../components/ProfileEditor.vue'; // 引入组件
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -49,6 +64,11 @@ const route = useRoute();
 // 它会追踪当前路由的路径（route.path），并将其值赋给 activeMenu。
 // 这样，当路由变化时，activeMenu 的值也会自动更新，菜单高亮状态随之改变。
 const activeMenu = computed(() => route.path);
+const profileEditorRef = ref(null); // 创建 ref
+// 调用子组件的 open 方法
+const openProfile = () => {
+    profileEditorRef.value?.open();
+};
 
 const handleLogout = () => {
     authStore.logout();
@@ -74,5 +94,13 @@ const handleLogout = () => {
 
 .el-menu {
     border-right: none;
+}
+
+.el-dropdown-link {
+    cursor: pointer;
+    color: white;
+    /* 教师端 Header 颜色不同 */
+    display: flex;
+    align-items: center;
 }
 </style>

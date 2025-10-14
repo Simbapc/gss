@@ -1,6 +1,6 @@
 // views/admin/TopicList.vue
 <template>
-    <el-table :data="topics" border v-loading="loading">
+    <el-table :data="topics" border>
         <el-table-column prop="title" label="课题标题" />
         <el-table-column prop="teacher.name" label="指导教师" width="120" />
         <el-table-column prop="status" label="状态" width="100">

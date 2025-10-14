@@ -1,7 +1,7 @@
 <template>
     <div>
         <el-button type="primary" @click="handleCreate" style="margin-bottom: 20px;">新增用户</el-button>
-        <el-table :data="users" border v-loading="loading">
+        <el-table :data="users" border>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="username" label="用户名/学号" />
             <el-table-column prop="name" label="姓名" />

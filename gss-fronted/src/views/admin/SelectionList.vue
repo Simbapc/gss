@@ -1,6 +1,6 @@
 // src/views/admin/SelectionList.vue
 <template>
-    <el-table :data="selections" border v-loading="loading" style="width: 100%">
+    <el-table :data="selections" border style="width: 100%">
         <el-table-column prop="topic.title" label="课题标题" show-overflow-tooltip />
         <el-table-column prop="student.name" label="选择学生" width="150" />
         <el-table-column prop="student.username" label="学生学号" width="150" />

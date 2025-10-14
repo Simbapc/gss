@@ -3,7 +3,7 @@
         <!-- 
       【阶段五 优化】: 添加 :row-class-name 属性来动态添加 CSS 类
     -->
-        <el-table :data="topics" style="width: 100%" border v-loading="loading" :row-class-name="tableRowClassName">
+        <el-table :data="topics" style="width: 100%" border :row-class-name="tableRowClassName">
             <el-table-column prop="title" label="课题标题" show-overflow-tooltip />
             <el-table-column prop="description" label="课题描述" show-overflow-tooltip />
             <el-table-column prop="teacher.name" label="指导教师" width="120" />

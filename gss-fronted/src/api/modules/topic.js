@@ -6,7 +6,7 @@ export const createTopic = (data) => api.post("/topics", data);
 export const updateTopic = (id, data) => api.put(`/topics/${id}`, data);
 export const deleteTopic = (id) => api.delete(`/topics/${id}`);
 
-export const fetchAvailableTopics = () => api.get("/topics/available");
+// export const fetchAvailableTopics = () => api.get("/topics/available");
 
 
 // =======================================================
@@ -15,10 +15,10 @@ export const fetchAvailableTopics = () => api.get("/topics/available");
 
 /**
  * 【您需要的函数】
- * 获取所有状态为 'open' 的课题，供学生列表页展示
+ * 获取所有状态为 'open' 的课题，供学生列表页展示`
  * @returns {Promise}
  */
-export const fetchAllOpenTopics = () => api.get('/topics');
+export const fetchAllOpenTopics = () => api.get('/topics/available');
 
 
 // =======================================================

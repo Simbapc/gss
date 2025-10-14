@@ -4,7 +4,9 @@ import { useAuthStore } from '../store/auth';
 import { ElMessage } from 'element-plus';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api', // 你的后端API地址
+  // 【阶段五 优化】: 使用环境变量作为 API 的基础 URL
+  // import.meta.env.VITE_API_BASE_URL 会自动读取 .env 文件中定义的值
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
 });
 

@@ -5,7 +5,7 @@
 
     <!-- 课题列表表格 -->
     <!-- 【阶段五 优化】: 将 @row-click 从 handleEdit 改为 handleRowClick -->
-    <el-table :data="topics" style="width: 100%" border v-loading="loading" @row-click="handleRowClick">
+    <el-table :data="topics" style="width: 100%" border @row-click="handleRowClick">
       <el-table-column prop="title" label="课题标题" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="scope">

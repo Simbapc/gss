@@ -79,7 +79,7 @@ exports.deleteTopic = async (req, res) => {
 };
 
 
-exports.getAvailableTopics = async (req, res) => {
+exports.fetchAllOpenTopics = async (req, res) => {
   try {
     const topics = await Topic.findAll({
       where: { status: 'open' },

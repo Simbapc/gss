@@ -3,8 +3,6 @@ const Topic = require("../models/Topic");
 const { Op } = require("sequelize");
 const User = require("../models/User"); // 确保引入User
 
-
-
 // -------[学生]----------
 // [学生] 选择一个课题
 exports.selectTopic = async (req, res) => {
@@ -16,6 +14,23 @@ exports.selectTopic = async (req, res) => {
     if (!topic || topic.status !== "open") {
       return res.status(404).json({ message: "课题不存在或当前不可选" });
     }
+
+    // 【修改】在创建前，检查学生是否已有“待审核”或“已通过”的选题
+    const existingSelection = await Selection.findOne({
+      where: {
+        studentId,
+        status: { [Op.in]: ["pending", "approved"] }, // Op.in = in ('pending', 'approved')
+      },
+    });
+
+    if (existingSelection) {
+      return res
+        .status(409)
+        .json({ message: "操作失败，您已经有待审核或已通过的选题" });
+    }
+
+    // 如果学生之前的选题被拒绝了，需要先删除旧的'rejected'记录
+    await Selection.destroy({ where: { studentId, status: "rejected" } });
 
     // Selection模型已设置studentId为unique，数据库层面会阻止重复创建
     // Sequelize的create操作如果违反unique约束会抛出SequelizeUniqueConstraintError
@@ -69,7 +84,8 @@ exports.cancelSelection = async (req, res) => {
     const result = await Selection.destroy({
       where: {
         studentId: req.user.id,
-        status: "pending", // 只能撤销待审核的选题
+        // 【修改】允许撤销 'pending' 的，或清除 'rejected' 的
+        status: { [Op.in]: ["pending", "rejected"] },
       },
     });
 
@@ -160,8 +176,9 @@ exports.reviewSelection = async (req, res) => {
         }
       );
     } else if (decision === "reject") {
-      // 如果是拒绝，则直接删除该条选题记录，让学生可以重新选择
-      await selection.destroy({ transaction: t });
+      // 【修改】如果是拒绝，不再删除记录，而是将状态更新为 'rejected'
+      selection.status = "rejected";
+      await selection.save({ transaction: t });
     } else {
       await t.rollback();
       return res.status(400).json({ message: "无效的审核决定" });

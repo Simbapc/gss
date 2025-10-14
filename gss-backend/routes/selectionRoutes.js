@@ -3,7 +3,7 @@ const router = express.Router();
 const selectionController = require("../controllers/selectionController");
 const { protect, isStudent, isTeacher } = require("../middleware/authMiddleware");
 
-
+// 学生路由
 router.post("/select/:topicId", protect, isStudent,selectionController.selectTopic);
 router.get("/my-selection", protect, isStudent, selectionController.getMySelection);
 router.delete("/cancel", protect, isStudent, selectionController.cancelSelection);

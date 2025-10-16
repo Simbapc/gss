@@ -33,10 +33,26 @@ const User = sequelize.define(
     tableName: "users",
     timestamps: true, // Sequelize会自动处理 created_at 和 updated_at
     underscored: true, // 将驼峰命名的字段转换为下划线命名
+
+    // 【阶段六 优化】: 在模型级别定义索引
+    indexes: [
+      {
+        name: "users_username_idx", // 索引名称
+        unique: true, // 保证是唯一索引
+        fields: ["username"], // 索引作用的字段
+      },
+    ],
     hooks: {
       // 在创建用户之前，自动哈希密码
       beforeCreate: async (user) => {
         if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      // 在更新用户信息之前，如果密码被修改，则对新密码进行哈希加密
+      beforeUpdate: async (user) => {
+        if (user.changed("password")) {
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(user.password, salt);
         }

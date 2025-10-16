@@ -1,6 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const topicController = require("../controllers/topicController");
+const cacheMiddleware = require("../middleware/cache"); // <-- 导入缓存中间件
+const invalidateCacheMiddleware = require("../middleware/invalidateCache"); // <-- 导入失效中间件
+
+const invalidateTopicsCache = invalidateCacheMiddleware("cache:"); // 创建一个专门用于 topics 的失效实例
+
 const {
   protect,
   isTeacher,
@@ -11,15 +16,37 @@ const {
 router.get(
   "/available",
   protect,
+  cacheMiddleware,
   isStudent,
   topicController.fetchAllOpenTopics
 );
 
 // 所有课题相关的路由都需要登录，并且是教师角色
 
-router.post("/", protect, isTeacher, topicController.createTopic); // 创建课题
+router.post(
+  "/",
+  protect,
+  isTeacher,
+  invalidateTopicsCache,
+  topicController.createTopic
+); // 创建课题
+
 router.get("/my-topics", protect, isTeacher, topicController.getTeacherTopics); // 获取我的课题
-router.put("/:id", protect, isTeacher, topicController.updateTopic); // 更新课题
-router.delete("/:id", protect, isTeacher, topicController.deleteTopic); // 删除课题
+
+router.put(
+  "/:id",
+  protect,
+  isTeacher,
+  invalidateTopicsCache,
+  topicController.updateTopic
+); // 更新课题
+
+router.delete(
+  "/:id",
+  protect,
+  isTeacher,
+  invalidateTopicsCache,
+  topicController.deleteTopic
+); // 删除课题
 
 module.exports = router;

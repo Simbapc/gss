@@ -21,6 +21,11 @@ const Topic = sequelize.define(
       // Sequelize 默认将 teacher_id 转换为驼峰命名
       type: DataTypes.INTEGER,
       allowNull: false,
+      field: "teacher_id", // 对应数据库字段
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     status: {
       type: DataTypes.ENUM("open", "locked", "closed"),
@@ -33,10 +38,17 @@ const Topic = sequelize.define(
       allowNull: false,
     },
   },
+
   {
     tableName: "topics",
     timestamps: true,
     underscored: true,
+    indexes: [
+      {
+        name: "topic_teacher_id_idx", // 索引名称
+        fields: ["teacher_id"], // 索引字段
+      },
+    ],
   }
 );
 

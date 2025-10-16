@@ -47,19 +47,23 @@ exports.selectTopic = async (req, res) => {
     }
 
     // 4.如果学生之前的选题被拒绝了，需要先删除旧的'rejected'记录
-    await Selection.destroy({ where: { studentId, status: "rejected" } }，
-      transaction 
+    await Selection.destroy(
+      { where: { studentId, status: "rejected" } },
+      transaction
     );
 
     // 5. 创建新的选题记录，状态为'pending'
-    const selection = await Selection.create({
-      studentId,
-      topicId,
-      status: "pending",
-    }, { transaction });
+    const selection = await Selection.create(
+      {
+        studentId,
+        topicId,
+        status: "pending",
+      },
+      { transaction }
+    );
 
     // 6. 【关键】立即将课题状态更新为'closed'，完成“抢占”
-    await topic.update({ status: 'closed' }, { transaction });
+    await topic.update({ status: "closed" }, { transaction });
 
     // 7. 提交事务
     await transaction.commit();
@@ -112,22 +116,24 @@ exports.cancelSelection = async (req, res) => {
   try {
     // 找到学生正在'pending'的选题
     const selection = await Selection.findOne({
-        where: { studentId, status: 'pending' },
-        transaction
+      where: { studentId, status: "pending" },
+      transaction,
     });
     if (!selection) {
       await transaction.rollback();
-      return res.status(404).json({ message: "未找到可撤销的选题，或选题已被处理" });
+      return res
+        .status(404)
+        .json({ message: "未找到可撤销的选题，或选题已被处理" });
     }
     // 【重要】如果学生撤销，课题需要被重新开放
     await Topic.update(
-        { status: 'open' },
-        { where: { id: selection.topicId }, transaction }
+      { status: "open" },
+      { where: { id: selection.topicId }, transaction }
     );
 
     // 删除该条选题记录
     await selection.destroy({ transaction });
-    
+
     await transaction.commit();
 
     // const result = await Selection.destroy({
@@ -183,60 +189,46 @@ exports.reviewSelection = async (req, res) => {
   const { selectionId } = req.params;
   const { decision } = req.body; // 'approve' or 'reject'
   const teacherId = req.user.id;
-
-  const t = await require("../config/database").transaction(); // 开启事务
+  const transaction = await sequelize.transaction();
 
   try {
     const selection = await Selection.findByPk(selectionId, {
       include: [{ model: Topic, as: "topic" }],
-      transaction: t,
+      transaction: transaction,
     });
 
     // 权限验证
     if (!selection || selection.topic.teacherId !== teacherId) {
-      await t.rollback();
+      await transaction.rollback();
       return res.status(404).json({ message: "未找到该选题记录或无权操作" });
     }
     if (selection.status !== "pending") {
-      await t.rollback();
+      await transaction.rollback();
       return res.status(400).json({ message: "该申请已被处理，请勿重复操作" });
     }
 
     if (decision === "approve") {
-      // 1. 更新当前选题记录为 'approved'
-      selection.status = "approved";
-      await selection.save({ transaction: t });
-
-      // 2. 将该课题状态更新为 'closed'
-      await Topic.update(
-        { status: "closed" },
-        { where: { id: selection.topicId }, transaction: t }
-      );
-
-      // 3. 自动拒绝其他所有选择了此课题的学生
-      await Selection.update(
-        { status: "rejected" },
-        {
-          where: {
-            topicId: selection.topicId,
-            id: { [Op.ne]: selectionId }, // Op.ne = Not Equal
-          },
-          transaction: t,
-        }
-      );
+      // 决策：批准
+      // 只需更新选题状态，课题状态已经是'closed'了
+      await selection.update({ status: "approved" }, { transaction });
     } else if (decision === "reject") {
-      // 【修改】如果是拒绝，不再删除记录，而是将状态更新为 'rejected'
-      selection.status = "rejected";
-      await selection.save({ transaction: t });
+      // 决策：拒绝
+      // 1. 更新选题状态为 'rejected'
+      await selection.update({ status: "rejected" }, { transaction });
+      // 2. 【重要】将课题重新开放给其他学生
+      await Topic.update(
+        { status: "open" },
+        { where: { id: selection.topicId }, transaction }
+      );
     } else {
-      await t.rollback();
+      await transaction.rollback();
       return res.status(400).json({ message: "无效的审核决定" });
     }
 
-    await t.commit(); // 提交事务
+    await transaction.commit(); // 提交事务
     res.status(200).json({ message: "审核操作成功" });
   } catch (error) {
-    await t.rollback();
+    await transaction.rollback();
     res.status(500).json({ message: "服务器错误", error: error.message });
   }
 };

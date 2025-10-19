@@ -1,10 +1,35 @@
 <template>
     <div>
-        <div style="margin-bottom: 20px;">
-            <el-button type="primary" @click="handleCreate">新增用户</el-button>
-            <el-button type="success" @click="handleImport" style="margin-left: 10px;">批量导入学生</el-button>
+    <div style="margin-bottom: 20px;">
+        <el-button type="primary" @click="handleCreate">新增用户</el-button>
+        <el-button type="success" @click="handleImport" style="margin-left: 10px;">批量导入学生</el-button>
+    </div>
+
+    <!-- 搜索和分页 -->
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center;">
+            <el-input
+                v-model="searchKeyword"
+                placeholder="搜索用户名或姓名"
+                style="width: 300px; margin-right: 10px;"
+                @keyup.enter="handleSearch"
+                clearable
+                @clear="handleSearch"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
         </div>
-        <el-table :data="users" border>
+        
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 10px; color: #666;">每页显示:</span>
+            <el-select v-model="pageSize" @change="handlePageSizeChange" style="width: 100px;">
+                <el-option label="10" value="10" />
+                <el-option label="20" value="20" />
+                <el-option label="50" value="50" />
+            </el-select>
+        </div>
+    </div>
+
+    <el-table :data="users" border v-loading="loading">
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="username" label="用户名/学号" />
             <el-table-column prop="name" label="姓名" />
@@ -29,6 +54,19 @@
                 </template>
             </el-table-column>
         </el-table>
+
+        <!-- 分页组件 -->
+        <div style="margin-top: 20px; display: flex; justify-content: center;">
+            <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50]"
+                :total="total"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handlePageSizeChange"
+                @current-change="handleCurrentChange"
+            />
+        </div>
 
         <el-dialog v-model="dialogVisible" :title="dialogTitle" width="30%">
             <el-form :model="form" label-width="80px" @submit.prevent="handleSubmit">
@@ -109,6 +147,12 @@ const dialogVisible = ref(false);
 const dialogTitle = ref('');
 const form = reactive({ id: null, username: '', name: '', password: '', role: 'student' });
 
+// 搜索和分页相关变量
+const searchKeyword = ref('');
+const currentPage = ref(1);
+const pageSize = ref('10');
+const total = ref(0);
+
 // 用于显示中文角色名
 const roleText = (role) => ({ student: '学生', teacher: '教师', admin: '管理员' }[role] || '未知');
 
@@ -130,8 +174,14 @@ const roleTagType = (role) => {
 const loadUsers = async () => {
     loading.value = true;
     try {
-        const res = await fetchAllUsers();
-        users.value = res.data;
+        const params = {
+            page: currentPage.value,
+            pageSize: pageSize.value,
+            search: searchKeyword.value
+        };
+        const res = await fetchAllUsers(params);
+        users.value = res.data.users;
+        total.value = res.data.pagination.total;
     } catch (error) {
         console.error("加载用户列表失败:", error);
         ElMessage.error("用户数据加载失败");
@@ -139,6 +189,25 @@ const loadUsers = async () => {
         loading.value = false;
     }
 };
+
+// 搜索处理
+const handleSearch = () => {
+    currentPage.value = 1;
+    loadUsers();
+};
+
+// 分页大小改变处理
+const handlePageSizeChange = () => {
+    currentPage.value = 1;
+    loadUsers();
+};
+
+// 页码改变处理
+const handleCurrentChange = (page) => {
+    currentPage.value = page;
+    loadUsers();
+};
+
 onMounted(loadUsers);
 
 const resetForm = () => { Object.assign(form, { id: null, username: '', name: '', password: '', role: 'student' }); };
@@ -157,24 +226,46 @@ const handleEdit = (row) => {
 };
 
 const handleSubmit = async () => {
-    try {
-        const payload = { ...form };
-        if (!payload.password) delete payload.password;
-
-        if (form.id) {
-            await updateUser(form.id, payload);
-            ElMessage.success('更新成功');
-        } else {
-            await createUser(payload);
-            ElMessage.success('创建成功');
-        }
-        dialogVisible.value = false;
-        await loadUsers();
-    } catch (error) {
-        console.error("提交失败:", error);
-        const message = error.response?.data?.message || '操作失败，请检查输入或联系管理员';
-        ElMessage.error(message);
+  try {
+    const payload = { ...form };
+    
+    // 验证必填字段
+    if (!payload.username || !payload.username.trim()) {
+      ElMessage.warning('用户名不能为空');
+      return;
     }
+    if (!payload.name || !payload.name.trim()) {
+      ElMessage.warning('姓名不能为空');
+      return;
+    }
+    if (!payload.role) {
+      ElMessage.warning('请选择角色');
+      return;
+    }
+    
+    if (form.id) {
+      // 编辑用户：如果密码为空，则不更新密码字段
+      if (!payload.password) {
+        delete payload.password;
+      }
+      await updateUser(form.id, payload);
+      ElMessage.success('更新成功');
+    } else {
+      // 创建用户：密码不能为空
+      if (!payload.password) {
+        ElMessage.warning('创建用户时密码不能为空');
+        return;
+      }
+      await createUser(payload);
+      ElMessage.success('创建成功');
+    }
+    dialogVisible.value = false;
+    await loadUsers();
+  } catch (error) {
+    console.error("提交失败:", error);
+    const message = error.response?.data?.message || '操作失败，请检查输入或联系管理员';
+    ElMessage.error(message);
+  }
 };
 
 const handleDelete = async (userId) => {

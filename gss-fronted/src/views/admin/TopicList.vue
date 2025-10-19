@@ -7,7 +7,39 @@
       <el-button type="warning" @click="handleBatchEdit" style="margin-left: 10px;">批量编辑课题</el-button>
     </div>
 
-    <el-table :data="topics" border>
+    <!-- 搜索和分页 -->
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center;">
+            <el-input
+                v-model="searchKeyword"
+                placeholder="搜索课题标题或描述"
+                style="width: 300px; margin-right: 10px;"
+                @keyup.enter="handleSearch"
+                clearable
+                @clear="handleSearch"
+            />
+            <el-input
+                v-model="teacherKeyword"
+                placeholder="搜索指导教师"
+                style="width: 200px; margin-right: 10px;"
+                @keyup.enter="handleSearch"
+                clearable
+                @clear="handleSearch"
+            />
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+        </div>
+        
+        <div style="display: flex; align-items: center;">
+            <span style="margin-right: 10px; color: #666;">每页显示:</span>
+            <el-select v-model="pageSize" @change="handlePageSizeChange" style="width: 100px;">
+                <el-option label="10" value="10" />
+                <el-option label="20" value="20" />
+                <el-option label="50" value="50" />
+            </el-select>
+        </div>
+    </div>
+
+    <el-table :data="topics" border v-loading="loading">
       <el-table-column prop="title" label="课题标题" />
       <el-table-column prop="teacher.name" label="指导教师" width="120" />
       <el-table-column prop="status" label="状态" width="100">
@@ -27,6 +59,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 分页组件 -->
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+        <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handlePageSizeChange"
+            @current-change="handleCurrentChange"
+        />
+    </div>
 
     <!-- 批量新增课题对话框 -->
     <el-dialog v-model="batchCreateDialogVisible" title="批量新增课题" width="80%">
@@ -124,11 +169,25 @@ const batchEditDialogVisible = ref(false);
 const batchTopics = ref([]);
 const selectedTeacherId = ref('');
 
+// 搜索和分页相关变量
+const searchKeyword = ref('');
+const teacherKeyword = ref('');
+const currentPage = ref(1);
+const pageSize = ref('10');
+const total = ref(0);
+
 const loadTopics = async () => {
   loading.value = true;
   try {
-    const res = await fetchAllTopics();
-    topics.value = res.data;
+    const params = {
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      search: searchKeyword.value,
+      teacher: teacherKeyword.value
+    };
+    const res = await fetchAllTopics(params);
+    topics.value = res.data.topics;
+    total.value = res.data.pagination.total;
   } catch (error) {
     console.error("加载课题失败:", error);
   } finally {
@@ -136,10 +195,29 @@ const loadTopics = async () => {
   }
 };
 
+// 搜索处理
+const handleSearch = () => {
+  currentPage.value = 1;
+  loadTopics();
+};
+
+// 分页大小改变处理
+const handlePageSizeChange = () => {
+  currentPage.value = 1;
+  loadTopics();
+};
+
+// 页码改变处理
+const handleCurrentChange = (page) => {
+  currentPage.value = page;
+  loadTopics();
+};
+
 const loadTeachers = async () => {
   try {
     const res = await fetchAllUsers();
-    teachers.value = res.data.filter(user => user.role === 'teacher');
+    // 注意：fetchAllUsers 现在返回分页结构，数据在 res.data.users 中
+    teachers.value = res.data.users.filter(user => user.role === 'teacher');
   } catch (error) {
     console.error("加载教师列表失败:", error);
   }

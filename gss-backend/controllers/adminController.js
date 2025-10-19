@@ -7,8 +7,36 @@ const { Op } = require("sequelize");
 // --- 用户管理 ---
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({ attributes: { exclude: ["password"] } });
-    res.status(200).json(users);
+    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const offset = (page - 1) * pageSize;
+    const limit = parseInt(pageSize);
+    
+    // 构建搜索条件
+    const whereCondition = {};
+    if (search) {
+      whereCondition[Op.or] = [
+        { username: { [Op.like]: `%${search}%` } },
+        { name: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows: users } = await User.findAndCountAll({
+      where: whereCondition,
+      attributes: { exclude: ["password"] },
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json({
+      users,
+      pagination: {
+        current: parseInt(page),
+        pageSize: limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: "服务器错误" });
   }
@@ -67,11 +95,49 @@ exports.deleteUser = async (req, res) => {
 // --- 课题管理 ---
 exports.getAllTopics = async (req, res) => {
   try {
-    const topics = await Topic.findAll({
-      include: { model: User, as: "teacher", attributes: ["name"] },
-      order: [["createdAt", "DESC"]],
+    const { page = 1, pageSize = 10, search = '', teacher = '' } = req.query;
+    const offset = (page - 1) * pageSize;
+    const limit = parseInt(pageSize);
+    
+    // 构建搜索条件
+    const whereCondition = {};
+    if (search) {
+      whereCondition[Op.or] = [
+        { title: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    // 构建关联查询条件
+    const includeCondition = {
+      model: User,
+      as: "teacher",
+      attributes: ["name"]
+    };
+
+    if (teacher) {
+      includeCondition.where = {
+        name: { [Op.like]: `%${teacher}%` }
+      };
+    }
+
+    const { count, rows: topics } = await Topic.findAndCountAll({
+      where: whereCondition,
+      include: includeCondition,
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']]
     });
-    res.status(200).json(topics);
+
+    res.status(200).json({
+      topics,
+      pagination: {
+        current: parseInt(page),
+        pageSize: limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: "服务器错误" });
   }
@@ -80,14 +146,62 @@ exports.getAllTopics = async (req, res) => {
 // --- 选题管理 ---
 exports.getAllSelections = async (req, res) => {
   try {
-    const selections = await Selection.findAll({
-      include: [
-        { model: Topic, as: "topic", attributes: ["title"] },
-        { model: User, as: "student", attributes: ["name", "username"] },
-      ],
-      order: [["updatedAt", "DESC"]],
+    const { page = 1, pageSize = 10, search = '', student = '', topic = '', status = '' } = req.query;
+    const offset = (page - 1) * pageSize;
+    const limit = parseInt(pageSize);
+    
+    // 构建搜索条件
+    const whereCondition = {};
+    if (status) {
+      whereCondition.status = status;
+    }
+
+    // 构建关联查询条件
+    const includeConditions = [
+      {
+        model: Topic,
+        as: "topic",
+        attributes: ["title"],
+        where: topic ? { title: { [Op.like]: `%${topic}%` } } : undefined
+      },
+      {
+        model: User,
+        as: "student",
+        attributes: ["name", "username"],
+        where: {}
+      }
+    ];
+
+    // 学生搜索条件
+    if (search) {
+      includeConditions[1].where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } }
+      ];
+    } else if (student) {
+      includeConditions[1].where[Op.or] = [
+        { name: { [Op.like]: `%${student}%` } },
+        { username: { [Op.like]: `%${student}%` } }
+      ];
+    }
+
+    const { count, rows: selections } = await Selection.findAndCountAll({
+      where: whereCondition,
+      include: includeConditions,
+      offset,
+      limit,
+      order: [['updatedAt', 'DESC']]
     });
-    res.status(200).json(selections);
+
+    res.status(200).json({
+      selections,
+      pagination: {
+        current: parseInt(page),
+        pageSize: limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: "服务器错误" });
   }

@@ -14,6 +14,9 @@ router.delete("/users/:id", adminController.deleteUser);
 
 // 课题管理
 router.get("/topics", adminController.getAllTopics);
+router.post("/topics/batch-create", adminController.adminBatchCreateTopics);
+router.put("/topics/batch-update", adminController.adminBatchUpdateTopics);
+router.delete("/topics/:id", adminController.adminDeleteTopic);
 
 // 选题管理
 router.get("/selections", adminController.getAllSelections);

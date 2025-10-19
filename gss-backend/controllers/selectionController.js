@@ -41,7 +41,7 @@ exports.selectTopic = async (req, res) => {
       await transaction.rollback();
       return res.status(404).json({ message: "课题不存在" });
     }
-    
+
     if (topic.status !== "open") {
       await transaction.rollback();
       return res.status(409).json({ message: "该课题已被其他学生选择" });
@@ -72,7 +72,10 @@ exports.selectTopic = async (req, res) => {
     res.status(201).json({ message: "选题成功，等待教师审核", selection });
   } catch (error) {
     // 检查是否是事务已回滚的错误
-    if (error.message && error.message.includes("rollback has been called on this transaction")) {
+    if (
+      error.message &&
+      error.message.includes("rollback has been called on this transaction")
+    ) {
       // 事务已经被回滚，直接返回错误信息
       return res.status(409).json({ message: "该课题已被其他学生选择" });
     }
@@ -89,7 +92,18 @@ exports.selectTopic = async (req, res) => {
 
     // 处理各种可能的错误类型
     if (error.name === "SequelizeUniqueConstraintError") {
-      return res.status(409).json({ message: "操作失败，您已经选择了课题" });
+      // 检查是否是真正的重复选择，还是并发冲突
+      const currentSelection = await Selection.findOne({
+        where: { studentId }
+      });
+      
+      if (currentSelection) {
+        // 学生确实已经选择了课题
+        return res.status(409).json({ message: "操作失败，您已经选择了课题" });
+      } else {
+        // 这是并发冲突，课题已被其他学生选择
+        return res.status(409).json({ message: "该课题已被其他学生选择" });
+      }
     }
     if (error.name === "SequelizeConnectionAcquireTimeoutError") {
       return res.status(503).json({ message: "系统繁忙，请稍后重试" });
@@ -110,12 +124,12 @@ exports.selectTopic = async (req, res) => {
     if (error.name === "SequelizeForeignKeyConstraintError") {
       return res.status(400).json({ message: "关联数据不存在" });
     }
-    
+
     // 检查是否是锁等待超时
     if (error.message && error.message.includes("lock wait timeout")) {
       return res.status(409).json({ message: "该课题已被其他学生选择" });
     }
-    
+
     // 对于其他未知错误，记录详细日志但返回友好提示
     console.error("选题操作未知错误详情:");
     console.error("错误名称:", error.name);
@@ -260,7 +274,7 @@ exports.reviewSelection = async (req, res) => {
     } else if (decision === "reject") {
       // 决策：拒绝
       // 1. 更新选题状态为 'rejected'
-      await selection.update({ status: "rejected" }, { transaction });
+      await selection.destroy({ status: "rejected" }, { transaction });
       // 2. 【重要】将课题重新开放给其他学生
       await Topic.update(
         { status: "open" },

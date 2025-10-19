@@ -10,4 +10,4 @@ export const cancelSelection = () => api.delete("/selections/cancel");
 export const fetchPendingSelections = () =>
   api.get("/selections/teacher/pending");
 export const reviewSelection = (selectionId, decision) =>
-  api.put(`/selections/teacher/review/${selectionId}`, { decision });
+  api.patch(`/selections/teacher/review/${selectionId}`, { decision });

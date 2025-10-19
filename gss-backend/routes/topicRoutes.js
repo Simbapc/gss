@@ -49,4 +49,22 @@ router.delete(
   topicController.deleteTopic
 ); // 删除课题
 
+// 批量新增课题
+router.post(
+  "/batch-create",
+  protect,
+  isTeacher,
+  invalidateTopicsCache,
+  topicController.batchCreateTopics
+);
+
+// 批量更新课题
+router.put(
+  "/batch-update",
+  protect,
+  isTeacher,
+  invalidateTopicsCache,
+  topicController.batchUpdateTopics
+);
+
 module.exports = router;

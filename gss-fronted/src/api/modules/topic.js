@@ -6,6 +6,10 @@ export const createTopic = (data) => api.post("/topics", data);
 export const updateTopic = (id, data) => api.put(`/topics/${id}`, data);
 export const deleteTopic = (id) => api.delete(`/topics/${id}`);
 
+// 批量操作API
+export const batchCreateTopics = (topics) => api.post("/topics/batch-create", { topics });
+export const batchUpdateTopics = (topics) => api.put("/topics/batch-update", { topics });
+
 // export const fetchAvailableTopics = () => api.get("/topics/available");
 
 

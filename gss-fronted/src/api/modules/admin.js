@@ -10,6 +10,9 @@ export const deleteUser = (userId) => api.delete(`/admin/users/${userId}`);
 
 // 课题管理
 export const fetchAllTopics = () => api.get("/admin/topics");
+export const adminBatchCreateTopics = (data) => api.post("/admin/topics/batch-create", data);
+export const adminBatchUpdateTopics = (topics) => api.put("/admin/topics/batch-update", { topics });
+export const adminDeleteTopic = (topicId) => api.delete(`/admin/topics/${topicId}`);
 
 // 选题管理
 export const fetchAllSelections = () => api.get("/admin/selections");

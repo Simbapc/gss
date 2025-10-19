@@ -171,8 +171,7 @@ router.beforeEach((to, from, next) => {
 
 // 【阶段五 优化】 5. 在路由跳转结束后关闭进度条
 router.afterEach(() => {
-    NProgress.done();
+  NProgress.done();
 });
-
 
 export default router;

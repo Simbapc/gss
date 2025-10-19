@@ -48,6 +48,7 @@ const loadTopics = async () => {
     try {
         const res = await fetchAllOpenTopics();
         topics.value = res.data;
+        console.log("课题列表:", topics.value);
     } catch (error) {
         console.error("加载课题列表失败:", error);
         ElMessage.error('课题列表加载失败');
@@ -89,27 +90,43 @@ const tableRowClassName = ({ row }) => {
     return '';
 };
 
-// 处理选择课题的逻辑保持不变
+// 处理选择课题的逻辑
 const handleSelect = (topicId) => {
-    ElMessageBox.confirm('确定要选择这个课题吗？提交后在教师审核前无法更改。', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-    }).then(async () => {
-        try {
-            await selectTopic(topicId);
-            ElMessage.success('选择成功，请等待教师审核');
-            // 选择成功后，立即重新加载个人选择以更新UI
-            loading.value = true;
-            await loadMySelection();
-            loading.value = false;
-        } catch (error) {
-            console.error("选择课题失败:", error);
-            ElMessage.error(error.response?.data?.message || '选择失败');
-        }
-    }).catch(() => {
-        ElMessage.info('已取消选择');
-    });
+  ElMessageBox.confirm('确定要选择这个课题吗？提交后在教师审核前无法更改。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    try {
+      loading.value = true;
+      await selectTopic(topicId);
+      ElMessage.success('选择成功，请等待教师审核');
+      
+      // 选择成功后，立即重新加载个人选择和课题列表以更新UI
+      await Promise.all([loadMySelection(), loadTopics()]);
+    } catch (error) {
+      console.error("选择课题失败:", error);
+      
+      // 根据不同的错误类型显示不同的提示
+      const errorMessage = error.response?.data?.message || '选择失败';
+      
+      if (errorMessage.includes('已被其他学生选择')) {
+        ElMessage.warning('该课题已被其他同学选择，请选择其他课题');
+        // 重新加载课题列表，移除已被选择的课题
+        await loadTopics();
+      } else if (errorMessage.includes('系统繁忙')) {
+        ElMessage.warning('系统繁忙，请稍后重试');
+      } else if (errorMessage.includes('已经选择了课题')) {
+        ElMessage.warning('您已经选择了课题，无法重复选择');
+      } else {
+        ElMessage.error(errorMessage);
+      }
+    } finally {
+      loading.value = false;
+    }
+  }).catch(() => {
+    ElMessage.info('已取消选择');
+  });
 };
 </script>
 

@@ -1,6 +1,9 @@
 <template>
     <div>
-        <el-button type="primary" @click="handleCreate" style="margin-bottom: 20px;">新增用户</el-button>
+        <div style="margin-bottom: 20px;">
+            <el-button type="primary" @click="handleCreate">新增用户</el-button>
+            <el-button type="success" @click="handleImport" style="margin-left: 10px;">批量导入学生</el-button>
+        </div>
         <el-table :data="users" border>
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="username" label="用户名/学号" />
@@ -46,6 +49,50 @@
                 <el-button type="primary" @click="handleSubmit">确定</el-button>
             </template>
         </el-dialog>
+
+        <!-- Excel导入对话框 -->
+        <el-dialog v-model="importDialogVisible" title="批量导入学生" width="500px">
+            <div>
+                <p style="margin-bottom: 15px; color: #666;">
+                    <strong>Excel文件格式要求：</strong><br>
+                    - 第一列：学号（用户名）<br>
+                    - 第二列：学生姓名<br>
+                    - 第一行为表头，从第二行开始为数据<br>
+                    - 密码默认为学号，角色默认为学生
+                </p>
+                <div style="margin-bottom: 15px;">
+                    <el-link type="primary" href="/api/download/template" target="_blank" download="学生信息导入模板.xlsx">
+                        📥 下载Excel模板
+                    </el-link>
+                </div>
+                <el-upload
+                    ref="uploadRef"
+                    :auto-upload="false"
+                    :on-change="handleFileChange"
+                    :show-file-list="false"
+                    accept=".xlsx,.xls"
+                    drag
+                >
+                    <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                    <div class="el-upload__text">
+                        将Excel文件拖到此处，或<em>点击上传</em>
+                    </div>
+                </el-upload>
+                <div v-if="previewData.length > 0" style="margin-top: 20px;">
+                    <h4>预览数据 (共{{ previewData.length }}条):</h4>
+                    <el-table :data="previewData" border max-height="200">
+                        <el-table-column prop="username" label="学号" />
+                        <el-table-column prop="name" label="姓名" />
+                    </el-table>
+                </div>
+            </div>
+            <template #footer>
+                <el-button @click="importDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="handleImportSubmit" :loading="importLoading" :disabled="previewData.length === 0">
+                    确认导入
+                </el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -53,6 +100,8 @@
 import { ref, reactive, onMounted } from 'vue';
 import { fetchAllUsers, createUser, updateUser, deleteUser } from '../../api/modules/admin';
 import { ElMessage } from 'element-plus';
+import { UploadFilled } from '@element-plus/icons-vue';
+import * as XLSX from 'xlsx';
 
 const users = ref([]);
 const loading = ref(true);
@@ -129,13 +178,108 @@ const handleSubmit = async () => {
 };
 
 const handleDelete = async (userId) => {
+  try {
+    await deleteUser(userId);
+    ElMessage.success('删除成功');
+    await loadUsers();
+  } catch (error) {
+    console.error("删除失败:", error);
+    ElMessage.error("删除失败");
+  }
+};
+
+// Excel导入相关变量和函数
+const importDialogVisible = ref(false);
+const importLoading = ref(false);
+const previewData = ref([]);
+const uploadRef = ref();
+
+// 打开导入对话框
+const handleImport = () => {
+  importDialogVisible.value = true;
+  previewData.value = [];
+};
+
+// 处理文件选择
+const handleFileChange = (file) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
     try {
-        await deleteUser(userId);
-        ElMessage.success('删除成功');
-        await loadUsers();
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      
+      // 跳过表头，从第二行开始处理数据
+      const students = [];
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (row.length >= 2 && row[0] && row[1]) {
+          students.push({
+            username: String(row[0]).trim(), // 学号
+            name: String(row[1]).trim(),     // 姓名
+            password: String(row[0]).trim(), // 密码默认为学号
+            role: 'student'                  // 角色默认为学生
+          });
+        }
+      }
+      
+      previewData.value = students;
+      
+      if (students.length === 0) {
+        ElMessage.warning('未找到有效的学生数据，请检查Excel文件格式');
+      } else {
+        ElMessage.success(`成功解析 ${students.length} 条学生数据`);
+      }
     } catch (error) {
-        console.error("删除失败:", error);
-        ElMessage.error("删除失败");
+      console.error('Excel解析失败:', error);
+      ElMessage.error('Excel文件解析失败，请检查文件格式');
     }
+  };
+  reader.readAsArrayBuffer(file.raw);
+};
+
+// 提交导入
+const handleImportSubmit = async () => {
+  if (previewData.value.length === 0) {
+    ElMessage.warning('没有可导入的数据');
+    return;
+  }
+
+  importLoading.value = true;
+  try {
+    // 批量创建用户
+    const promises = previewData.value.map(student => 
+      createUser(student).catch(error => {
+        // 如果用户已存在，返回错误信息
+        return { error: true, message: error.response?.data?.message || '创建失败', username: student.username };
+      })
+    );
+
+    const results = await Promise.all(promises);
+    
+    // 统计结果
+    const successCount = results.filter(result => !result?.error).length;
+    const errorCount = results.filter(result => result?.error).length;
+    
+    if (errorCount > 0) {
+      const errorUsers = results.filter(result => result?.error).map(r => r.username);
+      ElMessage.warning(`成功导入 ${successCount} 个用户，${errorCount} 个用户导入失败（可能已存在）：${errorUsers.join(', ')}`);
+    } else {
+      ElMessage.success(`成功导入 ${successCount} 个学生用户`);
+    }
+    
+    // 关闭对话框并刷新列表
+    importDialogVisible.value = false;
+    previewData.value = [];
+    await loadUsers();
+    
+  } catch (error) {
+    console.error('批量导入失败:', error);
+    ElMessage.error('批量导入失败，请稍后重试');
+  } finally {
+    importLoading.value = false;
+  }
 };
 </script>

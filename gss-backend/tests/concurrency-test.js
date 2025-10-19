@@ -8,7 +8,7 @@ const sequelize = require("../config/database");
 
 // --- 测试配置 ---
 const BASE_URL = "http://localhost:3000/api";
-const NUM_CONCURRENT_USERS = 50; // 模拟50个学生同时抢课
+const NUM_CONCURRENT_USERS = 200; // 模拟200个学生同时抢课
 const TARGET_TOPIC_ID = 1; // 他们要抢的课题ID
 const TEACHER_USERNAME = "teacher1"; // 创建该课题的教师
 // -----------------
@@ -70,7 +70,10 @@ const loginAndGetToken = async (username, password) => {
       username,
       password,
     });
-    return response.data.token;
+    // 提取纯token，去掉"Bearer "前缀
+    const fullToken = response.data.token;
+    const pureToken = fullToken.replace("Bearer ", "");
+    return pureToken;
   } catch (error) {
     console.error(
       `用户 ${username} 登录失败:`,
@@ -84,16 +87,16 @@ const loginAndGetToken = async (username, password) => {
 const selectTopic = async (token, topicId, username) => {
   try {
     const response = await axios.post(
-      `${BASE_URL}/selections`,
-      { topicId },
+      `${BASE_URL}/selections/select/${topicId}`,
+      {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    // 返回成功信息和状态
+    // 返回成功信息 - API现在返回message和selection数据
     return {
       username,
       success: true,
       message: response.data.message,
-      data: response.data.selection,
+      selection: response.data.selection,
     };
   } catch (error) {
     // 返回失败信息
@@ -148,7 +151,7 @@ const runTest = async () => {
   let winner = null;
 
   results.forEach((result) => {
-    if (result.success && result.data.status === "pending") {
+    if (result.success) {
       successCount++;
       winner = result.username;
       console.log(`✅ [成功] 用户 ${result.username}: ${result.message}`);

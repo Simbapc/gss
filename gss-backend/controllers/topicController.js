@@ -1,5 +1,7 @@
 const Topic = require("../models/Topic");
-const User = require('../models/User'); // 引入User
+const User = require("../models/User"); // 引入User
+const { Op } = require("sequelize");
+const sequelize = require("../config/database");
 
 // [教师] 创建新课题
 exports.createTopic = async (req, res) => {
@@ -78,20 +80,33 @@ exports.deleteTopic = async (req, res) => {
   }
 };
 
-
+// [学生] 获取所有开放且未被选择的课题
 exports.fetchAllOpenTopics = async (req, res) => {
   try {
+    // 使用子查询直接在数据库层面过滤，避免内存中的过滤
     const topics = await Topic.findAll({
-      where: { status: 'open' },
-      include: {
-        model: User,
-        as: 'teacher',
-        attributes: ['name'] // 只包含教师的姓名
+      where: {
+        status: "open",
+        id: {
+          [Op.notIn]: sequelize.literal(`(
+            SELECT topic_id FROM selections 
+            WHERE status IN ('pending', 'approved')
+          )`),
+        },
       },
-      order: [['createdAt', 'DESC']]
+      include: [
+        {
+          model: User,
+          as: "teacher",
+          attributes: ["name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
+
     res.status(200).json(topics);
   } catch (error) {
-    res.status(500).json({ message: '服务器错误', error: error.message });
+    console.error("获取开放课题列表失败:", error);
+    res.status(500).json({ message: "服务器错误，请稍后重试" });
   }
 };

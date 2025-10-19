@@ -40,7 +40,7 @@ const Selection = sequelize.define(
     tableName: "selections",
     timestamps: true,
     underscored: true,
-    
+
     // 【阶段六 优化】: 在模型级别定义索引
     indexes: [
       // 尽管 studentId 的 unique 约束已创建索引，但明确定义可增强可读性

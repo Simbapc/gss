@@ -11,11 +11,15 @@ const topicRoutes = require("./routes/topicRoutes"); // 引入topic路由
 const selectionRoutes = require("./routes/selectionRoutes"); // 引入selection路由
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes"); // <-- 1. 引入新路由
+const healthRoutes = require("./routes/healthRoutes"); // 健康检查路由
 
 // 引入模型以同步关联关系
 require("./models/User");
 require("./models/Topic");
 require("./models/Selection"); // 引入Selection模型
+
+// 引入中间件
+const performanceMonitor = require("./middleware/performanceMonitor");
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3000;
@@ -23,6 +27,7 @@ const PORT = process.env.SERVER_PORT || 3000;
 // 中间件
 app.use(cors({ exposedHeaders: ["X-Cache"], credentials: true })); // 启用CORS
 app.use(express.json()); // 解析JSON请求体
+app.use(performanceMonitor); // 性能监控
 
 // 路由
 app.use("/api/auth", authRoutes);
@@ -30,6 +35,7 @@ app.use("/api/topics", topicRoutes); // 注册topic路由
 app.use("/api/selections", selectionRoutes); // 注册selection路由
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/health", healthRoutes); // 健康检查路由
 
 // 测试数据库连接并启动服务器
 async function startServer() {

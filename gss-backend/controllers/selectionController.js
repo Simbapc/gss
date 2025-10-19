@@ -3,20 +3,18 @@ const Topic = require("../models/Topic");
 const { Op } = require("sequelize");
 const User = require("../models/User"); // 确保引入User
 const sequelize = require("../config/database"); // 确保引入 sequelize 实例
+const { Transaction } = require("sequelize");
 
 // -------[学生]----------
 // [学生] 选择一个课题
 exports.selectTopic = async (req, res) => {
   const studentId = req.user.id;
   const { topicId } = req.params;
-  const transaction = await sequelize.transaction(); // <--- 启动事务
+  const transaction = await sequelize.transaction({
+    isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+  }); // <--- 启动事务
 
   try {
-    // const topic = await Topic.findByPk(topicId);
-    // if (!topic || topic.status !== "open") {
-    //   return res.status(404).json({ message: "课题不存在或当前不可选" });
-    // }
-
     // 1. 在创建前，检查学生是否已有“待审核”或“已通过”的选题
     const existingSelection = await Selection.findOne({
       where: {
@@ -39,11 +37,14 @@ exports.selectTopic = async (req, res) => {
     });
 
     // 3. 检查课题状态是否为'open'
-    if (!topic || topic.status !== "open") {
+    if (!topic) {
       await transaction.rollback();
-      return res
-        .status(400)
-        .json({ message: "课题不存在、已被选或当前不可选" });
+      return res.status(404).json({ message: "课题不存在" });
+    }
+    
+    if (topic.status !== "open") {
+      await transaction.rollback();
+      return res.status(409).json({ message: "该课题已被其他学生选择" });
     }
 
     // 4.如果学生之前的选题被拒绝了，需要先删除旧的'rejected'记录
@@ -68,14 +69,59 @@ exports.selectTopic = async (req, res) => {
     // 7. 提交事务
     await transaction.commit();
 
-    res.status(201).json({ message: "选题成功，等待教师审核" });
+    res.status(201).json({ message: "选题成功，等待教师审核", selection });
   } catch (error) {
-    // 确保任何错误都回滚事务
-    await transaction.rollback();
+    // 检查是否是事务已回滚的错误
+    if (error.message && error.message.includes("rollback has been called on this transaction")) {
+      // 事务已经被回滚，直接返回错误信息
+      return res.status(409).json({ message: "该课题已被其他学生选择" });
+    }
+
+    // 检查事务是否已经结束
+    if (transaction && !transaction.finished) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        // 忽略回滚错误，因为事务可能已经结束
+        console.warn("事务回滚失败:", rollbackError.message);
+      }
+    }
+
+    // 处理各种可能的错误类型
     if (error.name === "SequelizeUniqueConstraintError") {
       return res.status(409).json({ message: "操作失败，您已经选择了课题" });
     }
-    res.status(500).json({ message: "服务器错误", error: error.message });
+    if (error.name === "SequelizeConnectionAcquireTimeoutError") {
+      return res.status(503).json({ message: "系统繁忙，请稍后重试" });
+    }
+    if (error.name === "SequelizeTimeoutError") {
+      return res.status(503).json({ message: "系统繁忙，请稍后重试" });
+    }
+    if (error.name === "SequelizeDatabaseError") {
+      // 检查是否是死锁错误
+      if (error.message && error.message.includes("deadlock")) {
+        return res.status(409).json({ message: "系统繁忙，请稍后重试" });
+      }
+      return res.status(503).json({ message: "数据库操作失败，请稍后重试" });
+    }
+    if (error.name === "SequelizeValidationError") {
+      return res.status(400).json({ message: "数据验证失败，请检查输入" });
+    }
+    if (error.name === "SequelizeForeignKeyConstraintError") {
+      return res.status(400).json({ message: "关联数据不存在" });
+    }
+    
+    // 检查是否是锁等待超时
+    if (error.message && error.message.includes("lock wait timeout")) {
+      return res.status(409).json({ message: "该课题已被其他学生选择" });
+    }
+    
+    // 对于其他未知错误，记录详细日志但返回友好提示
+    console.error("选题操作未知错误详情:");
+    console.error("错误名称:", error.name);
+    console.error("错误消息:", error.message);
+    console.error("错误堆栈:", error.stack);
+    return res.status(500).json({ message: "系统内部错误，请联系管理员" });
   }
 };
 

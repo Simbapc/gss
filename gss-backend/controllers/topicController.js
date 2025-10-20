@@ -39,6 +39,7 @@ exports.getTeacherTopics = async (req, res) => {
 // [教师] 更新课题信息
 exports.updateTopic = async (req, res) => {
   try {
+    console.log("Update topic request body:", req.body);
     const { id } = req.params;
     const { title, description, maxStudents, status } = req.body;
     const teacherId = req.user.id;
@@ -130,6 +131,9 @@ exports.batchUpdateTopics = async (req, res) => {
   try {
     const { topics } = req.body;
     const teacherId = req.user.id;
+
+    console.log("Received topics for batch update:", topics);
+
 
     if (!topics || !Array.isArray(topics) || topics.length === 0) {
       await transaction.rollback();

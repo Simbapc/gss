@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 const topicController = require("../controllers/topicController");
 const cacheMiddleware = require("../middleware/cache"); // <-- 导入缓存中间件
-const invalidateCacheMiddleware = require("../middleware/invalidateCache"); // <-- 导入失效中间件
+// const invalidateCacheMiddleware = require("../middleware/invalidateCache"); // <-- 导入失效中间件
 
-const invalidateTopicsCache = invalidateCacheMiddleware("cache:"); // 创建一个专门用于 topics 的失效实例
+// const invalidateTopicsCache = invalidateCacheMiddleware("cache:"); // 创建一个专门用于 topics 的失效实例
 
 const {
   protect,
@@ -27,7 +27,7 @@ router.post(
   "/",
   protect,
   isTeacher,
-  invalidateTopicsCache,
+  // invalidateTopicsCache,
   topicController.createTopic
 ); // 创建课题
 
@@ -37,7 +37,7 @@ router.put(
   "/:id",
   protect,
   isTeacher,
-  invalidateTopicsCache,
+  // invalidateTopicsCache,
   topicController.updateTopic
 ); // 更新课题
 
@@ -45,7 +45,7 @@ router.delete(
   "/:id",
   protect,
   isTeacher,
-  invalidateTopicsCache,
+  // invalidateTopicsCache,
   topicController.deleteTopic
 ); // 删除课题
 
@@ -54,16 +54,16 @@ router.post(
   "/batch-create",
   protect,
   isTeacher,
-  invalidateTopicsCache,
+  // invalidateTopicsCache,
   topicController.batchCreateTopics
 );
 
 // 批量更新课题
-router.put(
+router.post(
   "/batch-update",
   protect,
   isTeacher,
-  invalidateTopicsCache,
+  // invalidateTopicsCache,
   topicController.batchUpdateTopics
 );
 

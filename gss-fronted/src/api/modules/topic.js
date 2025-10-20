@@ -7,11 +7,12 @@ export const updateTopic = (id, data) => api.put(`/topics/${id}`, data);
 export const deleteTopic = (id) => api.delete(`/topics/${id}`);
 
 // 批量操作API
-export const batchCreateTopics = (topics) => api.post("/topics/batch-create", { topics });
-export const batchUpdateTopics = (topics) => api.put("/topics/batch-update", { topics });
+export const batchCreateTopics = (topics) =>
+  api.post("/topics/batch-create", { topics });
+export const batchUpdateTopics = (topics) =>
+  api.post("/topics/batch-update", { topics });
 
 // export const fetchAvailableTopics = () => api.get("/topics/available");
-
 
 // =======================================================
 // === 学生相关 API (Student-related APIs) ===
@@ -22,8 +23,7 @@ export const batchUpdateTopics = (topics) => api.put("/topics/batch-update", { t
  * 获取所有状态为 'open' 的课题，供学生列表页展示`
  * @returns {Promise}
  */
-export const fetchAllOpenTopics = () => api.get('/topics/available');
-
+export const fetchAllOpenTopics = () => api.get("/topics/available");
 
 // =======================================================
 // === 选题相关 API (Selection-related APIs) ===
@@ -37,4 +37,5 @@ export const fetchAllOpenTopics = () => api.get('/topics/available');
  * @param {number} topicId - 学生要选择的课题ID
  * @returns {Promise}
  */
-export const selectTopic = (topicId) => api.post(`/selections/select/${topicId}`);
+export const selectTopic = (topicId) =>
+  api.post(`/selections/select/${topicId}`);

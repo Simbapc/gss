@@ -75,11 +75,13 @@
         <el-button type="primary" @click="addBatchTopic" size="small">添加课题</el-button>
         <span style="margin-left: 10px; color: #666;">当前共 {{ batchTopics.length }} 个课题</span>
       </div>
-      
-      <div v-for="(topic, index) in batchTopics" :key="index" style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px;">
+
+      <div v-for="(topic, index) in batchTopics" :key="index"
+        style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
           <h4 style="margin: 0;">课题 {{ index + 1 }}</h4>
-          <el-button @click="removeBatchTopic(index)" type="danger" size="small" v-if="batchTopics.length > 1">删除</el-button>
+          <el-button @click="removeBatchTopic(index)" type="danger" size="small"
+            v-if="batchTopics.length > 1">删除</el-button>
         </div>
         <el-form :model="topic" label-width="80px">
           <el-form-item label="课题标题">
@@ -108,8 +110,9 @@
       <div style="margin-bottom: 15px;">
         <span style="color: #666;">当前共 {{ batchTopics.length }} 个课题</span>
       </div>
-      
-      <div v-for="(topic, index) in batchTopics" :key="topic.id" style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px;">
+
+      <div v-for="(topic, index) in batchTopics" :key="topic.id"
+        style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px;">
         <h4 style="margin: 0 0 10px 0;">课题 {{ index + 1 }} (ID: {{ topic.id }})</h4>
         <el-form :model="topic" label-width="80px">
           <el-form-item label="课题标题">
@@ -275,7 +278,7 @@ const handleBatchCreateSubmit = async () => {
   try {
     // 过滤掉空标题的课题
     const validTopics = batchTopics.value.filter(topic => topic.title.trim());
-    
+
     if (validTopics.length === 0) {
       ElMessage.warning('请至少填写一个有效的课题标题');
       return;
@@ -294,14 +297,16 @@ const handleBatchCreateSubmit = async () => {
 // 提交批量编辑
 const handleBatchEditSubmit = async () => {
   try {
+    console.log(batchTopics.value);
     const response = await batchUpdateTopics(batchTopics.value);
+
     ElMessage.success(response.data.message);
-    
+
     // 显示详细的处理结果
     if (response.data.results.failed > 0) {
       ElMessage.warning(`部分课题更新失败: ${response.data.results.errors.join('; ')}`);
     }
-    
+
     batchEditDialogVisible.value = false;
     await loadTopics();
   } catch (error) {

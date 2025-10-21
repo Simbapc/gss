@@ -84,7 +84,7 @@ exports.deleteTopic = async (req, res) => {
 // [教师] 批量新增课题
 exports.batchCreateTopics = async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const { topics } = req.body;
     const teacherId = req.user.id;
@@ -104,18 +104,18 @@ exports.batchCreateTopics = async (req, res) => {
 
     // 批量创建课题
     const createdTopics = await Topic.bulkCreate(
-      topics.map(topicData => ({
+      topics.map((topicData) => ({
         ...topicData,
         teacherId,
-        status: topicData.status || 'open'
+        status: topicData.status || "open",
       })),
       { transaction }
     );
 
     await transaction.commit();
-    res.status(201).json({ 
+    res.status(201).json({
       message: `成功批量创建 ${createdTopics.length} 个课题`,
-      topics: createdTopics 
+      topics: createdTopics,
     });
   } catch (error) {
     await transaction.rollback();
@@ -127,13 +127,10 @@ exports.batchCreateTopics = async (req, res) => {
 // [教师] 批量更新课题
 exports.batchUpdateTopics = async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const { topics } = req.body;
     const teacherId = req.user.id;
-
-    console.log("Received topics for batch update:", topics);
-
 
     if (!topics || !Array.isArray(topics) || topics.length === 0) {
       await transaction.rollback();
@@ -143,7 +140,7 @@ exports.batchUpdateTopics = async (req, res) => {
     const results = {
       success: 0,
       failed: 0,
-      errors: []
+      errors: [],
     };
 
     // 逐个更新课题
@@ -151,7 +148,7 @@ exports.batchUpdateTopics = async (req, res) => {
       try {
         const topic = await Topic.findOne({
           where: { id: topicData.id, teacherId },
-          transaction
+          transaction,
         });
 
         if (!topic) {
@@ -161,12 +158,15 @@ exports.batchUpdateTopics = async (req, res) => {
         }
 
         // 更新课题信息
-        await topic.update({
-          title: topicData.title || topic.title,
-          description: topicData.description || topic.description,
-          maxStudents: topicData.maxStudents || topic.maxStudents,
-          status: topicData.status || topic.status
-        }, { transaction });
+        await topic.update(
+          {
+            title: topicData.title || topic.title,
+            description: topicData.description || topic.description,
+            maxStudents: topicData.maxStudents || topic.maxStudents,
+            status: topicData.status || topic.status,
+          },
+          { transaction }
+        );
 
         results.success++;
       } catch (error) {
@@ -178,7 +178,7 @@ exports.batchUpdateTopics = async (req, res) => {
     await transaction.commit();
     res.status(200).json({
       message: `批量更新完成，成功: ${results.success}，失败: ${results.failed}`,
-      results
+      results,
     });
   } catch (error) {
     await transaction.rollback();

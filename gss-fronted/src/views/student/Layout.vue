@@ -16,7 +16,7 @@
         </el-aside>
         <el-container>
             <el-header class="header">
-                <span>高校毕业生在线选题系统</span>
+                <span>经管信息管理系毕业生在线选题系统</span>
                 <!-- 使用 Dropdown 组件 -->
                 <el-dropdown>
                     <span class="el-dropdown-link">

@@ -44,6 +44,7 @@ const createInitialData = async () => {
         name: "李同学",
         password: "student123",
         role: "student",
+        major: "信息管理与信息系统",
       },
     });
 

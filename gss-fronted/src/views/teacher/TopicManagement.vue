@@ -297,7 +297,6 @@ const handleBatchCreateSubmit = async () => {
 // 提交批量编辑
 const handleBatchEditSubmit = async () => {
   try {
-    console.log(batchTopics.value);
     const response = await batchUpdateTopics(batchTopics.value);
 
     ElMessage.success(response.data.message);

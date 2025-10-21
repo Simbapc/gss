@@ -31,15 +31,18 @@
 
     <el-table :data="users" border v-loading="loading">
             <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="username" label="用户名/学号" />
-            <el-table-column prop="name" label="姓名" />
-            <el-table-column prop="role" label="角色">
+            <el-table-column prop="username" label="用户名/学号" width="120" />
+            <el-table-column prop="name" label="姓名" width="120" />
+            <el-table-column prop="major" label="专业" width="150" align="center">
                 <template #default="scope">
-                    <!-- 
-            【修复关键】: 确保所有角色都有一个有效的 type。
-            之前学生角色 (student) 会导致 type 为空字符串 ""，现在我们给它 'primary'。
-            或者，我们可以创建一个函数来专门处理这个问题，让模板更简洁。
-          -->
+                    <el-tag v-if="scope.row.major" type="info" effect="plain">
+                        {{ scope.row.major }}
+                    </el-tag>
+                    <span v-else style="color: #999;">-</span>
+                </template>
+            </el-table-column>
+            <el-table-column prop="role" label="角色" width="120" align="center">
+                <template #default="scope">
                     <el-tag :type="roleTagType(scope.row.role)">
                         {{ roleText(scope.row.role) }}
                     </el-tag>
@@ -81,6 +84,12 @@
                         <el-option label="管理员" value="admin" />
                     </el-select>
                 </el-form-item>
+                <el-form-item label="专业" v-if="form.role === 'student'">
+                    <el-select v-model="form.major" placeholder="请选择专业" clearable>
+                        <el-option label="信息管理与信息系统" value="信息管理与信息系统" />
+                        <el-option label="电子商务" value="电子商务" />
+                    </el-select>
+                </el-form-item>
             </el-form>
             <template #footer>
                 <el-button @click="dialogVisible = false">取消</el-button>
@@ -95,6 +104,7 @@
                     <strong>Excel文件格式要求：</strong><br>
                     - 第一列：学号（用户名）<br>
                     - 第二列：学生姓名<br>
+                    - 第三列：专业（可选：信息管理与信息系统、电子商务）<br>
                     - 第一行为表头，从第二行开始为数据<br>
                     - 密码默认为学号，角色默认为学生
                 </p>
@@ -121,6 +131,14 @@
                     <el-table :data="previewData" border max-height="200">
                         <el-table-column prop="username" label="学号" />
                         <el-table-column prop="name" label="姓名" />
+                        <el-table-column prop="major" label="专业">
+                            <template #default="scope">
+                                <el-tag v-if="scope.row.major" type="info" effect="plain" size="small">
+                                    {{ scope.row.major }}
+                                </el-tag>
+                                <span v-else style="color: #999;">-</span>
+                            </template>
+                        </el-table-column>
                     </el-table>
                 </div>
             </div>
@@ -300,18 +318,39 @@ const handleFileChange = (file) => {
       const workbook = XLSX.read(data, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
       
-      // 跳过表头，从第二行开始处理数据
+      // 使用对象格式解析，这样可以根据列名来获取数据
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      console.log('解析的Excel数据:', jsonData);
+      
+      // 处理数据
       const students = [];
-      for (let i = 1; i < jsonData.length; i++) {
+      for (let i = 0; i < jsonData.length; i++) {
         const row = jsonData[i];
-        if (row.length >= 2 && row[0] && row[1]) {
+        
+        // 根据可能的列名来获取数据
+        const username = row['学号'] || row['用户名'] || row['username'] || row['学号/用户名'] || '';
+        const name = row['姓名'] || row['name'] || row['学生姓名'] || '';
+        const major = row['专业'] || row['major'] || row['学生专业'] || '';
+        
+        if (username && name) {
+          // 验证专业值是否在允许的范围内
+          let validMajor = '';
+          if (major) {
+            const majorValue = String(major).trim();
+            if (majorValue === '信息管理与信息系统' || majorValue === '电子商务') {
+              validMajor = majorValue;
+            } else {
+              console.warn(`无效的专业值: ${majorValue}，将忽略专业信息`);
+            }
+          }
+          
           students.push({
-            username: String(row[0]).trim(), // 学号
-            name: String(row[1]).trim(),     // 姓名
-            password: String(row[0]).trim(), // 密码默认为学号
-            role: 'student'                  // 角色默认为学生
+            username: String(username).trim(), // 学号
+            name: String(name).trim(),         // 姓名
+            password: String(username).trim(), // 密码默认为学号
+            role: 'student',                   // 角色默认为学生
+            major: validMajor                  // 专业信息
           });
         }
       }
@@ -319,7 +358,7 @@ const handleFileChange = (file) => {
       previewData.value = students;
       
       if (students.length === 0) {
-        ElMessage.warning('未找到有效的学生数据，请检查Excel文件格式');
+        ElMessage.warning('未找到有效的学生数据，请检查Excel文件格式和列名');
       } else {
         ElMessage.success(`成功解析 ${students.length} 条学生数据`);
       }

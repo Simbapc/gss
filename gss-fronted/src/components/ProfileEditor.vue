@@ -7,6 +7,14 @@
             <el-form-item label="姓名" prop="name">
                 <el-input v-model="form.name" />
             </el-form-item>
+            <el-form-item label="角色">
+                <el-input :value="roleText(authStore.user?.role)" disabled />
+            </el-form-item>
+            <el-form-item label="专业" v-if="authStore.user?.role === 'student'">
+                <el-input :value="authStore.user?.major || '未设置'" disabled>
+
+                </el-input>
+            </el-form-item>
             <el-form-item label="新密码" prop="password">
                 <el-input v-model="form.password" type="password" placeholder="不修改则留空" show-password />
             </el-form-item>
@@ -36,6 +44,16 @@ const form = reactive({
 const rules = {
     name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
     password: [{ min: 6, message: '密码长度不能少于6位', trigger: 'blur' }],
+};
+
+// 角色文本转换
+const roleText = (role) => {
+    const roleMap = {
+        student: '学生',
+        teacher: '教师',
+        admin: '管理员'
+    };
+    return roleMap[role] || '未知';
 };
 
 // 定义一个 open 方法，供父组件调用

@@ -43,7 +43,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  const { username, password, name, role } = req.body;
+  const { username, password, name, role, major } = req.body;
   try {
     // 直接使用明文密码，User模型的beforeCreate钩子会自动哈希
     const newUser = await User.create({
@@ -51,6 +51,7 @@ exports.createUser = async (req, res) => {
       password: password,  // 使用明文密码，让模型钩子处理哈希
       name,
       role,
+      major,
     });
     const userResponse = { ...newUser.get({ plain: true }) };
     delete userResponse.password;
@@ -62,13 +63,14 @@ exports.createUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, role, password } = req.body;
+  const { name, role, password, major } = req.body;
   try {
     const user = await User.findByPk(id);
     if (!user) return res.status(404).json({ message: "用户不存在" });
 
     user.name = name ?? user.name;
     user.role = role ?? user.role;
+    user.major = major ?? user.major;
     if (password) {
       user.password = await bcrypt.hash(password, 10);
     }
@@ -161,13 +163,18 @@ exports.getAllSelections = async (req, res) => {
       {
         model: Topic,
         as: "topic",
-        attributes: ["title"],
+        attributes: ["title", "description", "maxStudents"],
+        include: [{
+          model: User,
+          as: "teacher",
+          attributes: ["name"]
+        }],
         where: topic ? { title: { [Op.like]: `%${topic}%` } } : undefined
       },
       {
         model: User,
         as: "student",
-        attributes: ["name", "username"],
+        attributes: ["name", "username", "major"],
         where: {}
       }
     ];
@@ -206,6 +213,97 @@ exports.getAllSelections = async (req, res) => {
     res.status(500).json({ message: "服务器错误" });
   }
 };
+
+// 导出选题结果到Excel
+exports.exportSelectionsToExcel = async (req, res) => {
+  try {
+    const { search = '', student = '', topic = '', status = '' } = req.query;
+    
+    // 构建搜索条件
+    const whereCondition = {};
+    if (status) {
+      whereCondition.status = status;
+    }
+
+    // 构建关联查询条件
+    const includeConditions = [
+      {
+        model: Topic,
+        as: "topic",
+        attributes: ["title", "description", "maxStudents"],
+        include: [{
+          model: User,
+          as: "teacher",
+          attributes: ["name"]
+        }],
+        where: topic ? { title: { [Op.like]: `%${topic}%` } } : undefined
+      },
+      {
+        model: User,
+        as: "student",
+        attributes: ["name", "username", "major"],
+        where: {}
+      }
+    ];
+
+    // 学生搜索条件
+    if (search) {
+      includeConditions[1].where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } }
+      ];
+    } else if (student) {
+      includeConditions[1].where[Op.or] = [
+        { name: { [Op.like]: `%${student}%` } },
+        { username: { [Op.like]: `%${student}%` } }
+      ];
+    }
+
+    // 获取所有符合条件的选题记录
+    const selections = await Selection.findAll({
+      where: whereCondition,
+      include: includeConditions,
+      order: [['updatedAt', 'DESC']]
+    });
+
+    // 生成Excel数据
+    const excelData = selections.map(selection => ({
+      '学生姓名': selection.student.name,
+      '学生学号': selection.student.username,
+      '学生专业': selection.student.major || '',
+      '课题标题': selection.topic.title,
+      '课题描述': selection.topic.description || '',
+      '指导教师': selection.topic.teacher.name,
+      // '最大学生数': selection.topic.maxStudents,
+      '选择状态': getStatusText(selection.status),
+      '最后更新时间': new Date(selection.updatedAt).toLocaleString('zh-CN')
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: excelData,
+      total: selections.length,
+      message: `成功导出 ${selections.length} 条选题记录`
+    });
+  } catch (error) {
+    console.error("导出选题结果失败:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "导出选题结果失败", 
+      error: error.message 
+    });
+  }
+};
+
+// 辅助函数：获取状态文本
+function getStatusText(status) {
+  const statusMap = {
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝'
+  };
+  return statusMap[status] || '未知';
+}
 
 // --- 管理员课题管理 ---
 const sequelize = require("../config/database");

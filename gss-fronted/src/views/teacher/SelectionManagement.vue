@@ -6,9 +6,17 @@
       这可以有效避免在数据加载过程中因渲染时机问题而产生的插槽警告。
     -->
         <el-table v-if="!loading && selections.length > 0" :data="selections" style="width: 100%" border>
-            <el-table-column prop="topic.title" label="课题标题" />
-            <el-table-column prop="student.name" label="申请学生" />
-            <el-table-column prop="student.username" label="学生学号" />
+            <el-table-column prop="topic.title" label="课题标题" show-overflow-tooltip />
+            <el-table-column prop="student.name" label="申请学生" width="120" />
+            <el-table-column prop="student.username" label="学生学号" width="120" />
+            <el-table-column prop="student.major" label="专业" width="150" align="center">
+                <template #default="scope">
+                    <el-tag v-if="scope.row.student.major" type="info" effect="plain">
+                        {{ scope.row.student.major }}
+                    </el-tag>
+                    <span v-else style="color: #999;">-</span>
+                </template>
+            </el-table-column>
             <el-table-column label="操作" width="180" align="center">
                 <template #default="scope">
                     <el-button size="small" type="success" @click="handleReview(scope.row.id, 'approve')">通过</el-button>

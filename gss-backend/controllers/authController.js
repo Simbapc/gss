@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 // 用户注册
 exports.register = async (req, res) => {
   try {
-    const { username, password, name, role } = req.body;
+    const { username, password, name, role, major } = req.body;
 
     // 简单验证
     if (!username || !password || !name || !role) {
@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
     }
 
     // 创建用户（密码将在模型的 beforeCreate 钩子中被哈希）
-    const newUser = await User.create({ username, password, name, role });
+    const newUser = await User.create({ username, password, name, role, major });
 
     res.status(201).json({
       message: "用户注册成功",
@@ -28,6 +28,7 @@ exports.register = async (req, res) => {
         username: newUser.username,
         name: newUser.name,
         role: newUser.role,
+        major: newUser.major,
       },
     });
   } catch (error) {
@@ -70,6 +71,7 @@ exports.login = async (req, res) => {
         username: user.username,
         name: user.name,
         role: user.role,
+        major: user.major,
       },
     });
   } catch (error) {

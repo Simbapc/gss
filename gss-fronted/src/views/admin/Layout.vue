@@ -17,7 +17,7 @@
         </el-aside>
         <el-container>
             <el-header class="header">
-                <span>高校毕业生在线选题系统 - 管理后台</span>
+                <span>经管信息管理系毕业生在线选题系统 - 管理后台</span>
                 <div>
                     <span>欢迎您, {{ authStore.user?.name }}</span>
                     <el-button type="text" @click="authStore.logout()"

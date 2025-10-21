@@ -28,6 +28,12 @@ const User = sequelize.define(
       type: DataTypes.ENUM("student", "teacher", "admin"),
       allowNull: false,
     },
+    // --- 【新增字段】 ---
+    major: {
+      type: DataTypes.ENUM("信息管理与信息系统", "电子商务"),
+      allowNull: true, // 设置为true，因为教师和管理员可能没有专业
+      comment: "专业",
+    },
   },
   {
     tableName: "users",

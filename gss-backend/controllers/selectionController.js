@@ -232,7 +232,7 @@ exports.getSelectionsForMyTopics = async (req, res) => {
         {
           model: User,
           as: "student",
-          attributes: ["id", "username", "name"],
+          attributes: ["id", "username", "name", "major"],
         },
       ],
       where: { status: "pending" }, // 只获取待审核的

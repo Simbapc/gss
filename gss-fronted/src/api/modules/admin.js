@@ -16,3 +16,4 @@ export const adminDeleteTopic = (topicId) => api.delete(`/admin/topics/${topicId
 
 // 选题管理
 export const fetchAllSelections = (params = {}) => api.get("/admin/selections", { params });
+export const exportSelectionsToExcel = (params = {}) => api.get("/admin/selections/export", { params });

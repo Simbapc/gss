@@ -20,5 +20,6 @@ router.delete("/topics/:id", adminController.adminDeleteTopic);
 
 // 选题管理
 router.get("/selections", adminController.getAllSelections);
+router.get("/selections/export", adminController.exportSelectionsToExcel);
 
 module.exports = router;

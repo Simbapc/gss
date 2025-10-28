@@ -7,7 +7,7 @@ const { Op } = require("sequelize");
 // --- 用户管理 ---
 exports.getAllUsers = async (req, res) => {
   try {
-    const { page = 1, pageSize = 10, search = '' } = req.query;
+    const { page = 1, pageSize = 10, search = '', role = '' } = req.query;
     const offset = (page - 1) * pageSize;
     const limit = parseInt(pageSize);
     
@@ -18,6 +18,11 @@ exports.getAllUsers = async (req, res) => {
         { username: { [Op.like]: `%${search}%` } },
         { name: { [Op.like]: `%${search}%` } }
       ];
+    }
+
+    // 添加角色过滤条件
+    if (role) {
+      whereCondition.role = role;
     }
 
     const { count, rows: users } = await User.findAndCountAll({

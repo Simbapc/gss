@@ -73,3 +73,5 @@ User.prototype.isValidPassword = async function (password) {
 };
 
 module.exports = User;
+
+

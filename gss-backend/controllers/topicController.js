@@ -7,16 +7,41 @@ const sequelize = require("../config/database");
 exports.createTopic = async (req, res) => {
   try {
     const { title, description, maxStudents } = req.body;
-    const teacherId = req.user.id; // 从认证中间件获取教师ID
+    const teacherId = req.user.id;
 
-    if (!title) {
+    // 增强数据校验
+    if (!title || title.trim().length === 0) {
       return res.status(400).json({ message: "课题标题不能为空" });
+    }
+    
+    if (title.length > 100) {
+      return res.status(400).json({ message: "课题标题不能超过100个字符" });
+    }
+    
+    if (description && description.length > 500) {
+      return res.status(400).json({ message: "课题描述不能超过500个字符" });
+    }
+    
+    if (maxStudents && (maxStudents < 1 || maxStudents > 10)) {
+      return res.status(400).json({ message: "最大学生数应在1-10之间" });
+    }
+
+    // 检查是否已存在相同标题的课题
+    const existingTopic = await Topic.findOne({
+      where: {
+        teacherId,
+        title: { [Op.like]: title.trim() }
+      }
+    });
+    
+    if (existingTopic) {
+      return res.status(409).json({ message: "您已创建过相同标题的课题" });
     }
 
     const newTopic = await Topic.create({
-      title,
-      description,
-      maxStudents,
+      title: title.trim(),
+      description: description ? description.trim() : null,
+      maxStudents: maxStudents || 1,
       teacherId,
     });
 
@@ -160,7 +185,7 @@ exports.batchUpdateTopics = async (req, res) => {
         // 更新课题信息
         await topic.update(
           {
-            title: topicData.title || topic.title,
+            title: topicData.title || topi33333333333333333333333333333333333c.title,
             description: topicData.description || topic.description,
             maxStudents: topicData.maxStudents || topic.maxStudents,
             status: topicData.status || topic.status,

@@ -7,6 +7,7 @@ import App from './App.vue'
 import router from './router' // 引入 router
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import './style.css'
 // console.log("--- main.js 开始执行 ---");
 // 1. 创建 Vue 应用实例
 const app = createApp(App)

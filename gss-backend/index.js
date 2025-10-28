@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors"); // 引入cors
 const sequelize = require("./config/database");
 const createInitialData = require("./seeders/initialData"); // 【修复】 导入创建初始数据的函数
+const logger = require('./config/logger');
 
 // 引入路由
 const authRoutes = require("./routes/authRoutes");
@@ -41,19 +42,35 @@ app.use("/api/health", healthRoutes); // 健康检查路由
 async function startServer() {
   try {
     await sequelize.authenticate();
-    console.log("数据库连接成功.");
+    logger.info("数据库连接成功.");
 
     // 同步所有模型 (在开发中可以使用，生产环境建议使用迁移)
-    await sequelize.sync().then(() => {
+    await sequelize.sync({}).then(() => {
       console.log("数据库已同步，表结构已重置");
       // 在同步后创建初始数据
       createInitialData();
+      const logger = require('./config/logger');
+      
+      // 替换所有console.log为logger
       app.listen(PORT, () => {
-        console.log(`服务器正在 http://localhost:${PORT} 上运行`);
+        logger.info(`服务器运行在端口 ${PORT}`);
       });
+      
+      // 错误处理中间件
+      app.use((err, req, res, next) => {
+        // 记录错误日志
+        logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+        
+        // 响应错误
+        res.status(err.status || 500).json({
+          message: err.message || '服务器错误',
+          error: process.env.NODE_ENV === 'production' ? {} : err.stack
+        });
+      });
+      
     });
   } catch (error) {
-    console.error("无法连接到数据库:", error);
+    logger.error("无法连接到数据库:", error);
   }
 }
 

@@ -1,0 +1,15 @@
+/* 当屏幕宽度小于 768px 时 (典型的平板和手机) */
+@media (max-width: 768px) {
+    .login-container {
+        /* 假设这是您的登录框容器class */
+        width: 90%;
+        /* 不要再使用固定的px值，改用百分比 */
+        padding: 20px;
+    }
+
+    .form-layout {
+        /* 假设表单是左右布局 */
+        flex-direction: column;
+        /* 将横向布局改为垂直堆叠 */
+    }
+}

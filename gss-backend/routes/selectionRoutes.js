@@ -14,6 +14,8 @@ router.delete("/cancel", protect, isStudent, selectionController.cancelSelection
 // ------- 教师路由 -------
 // 获取待审核列表 (获取资源，用 GET)
 router.get('/teacher/pending', protect, isTeacher, selectionController.getSelectionsForMyTopics);
+// 获取已通过的选题列表 (获取资源，用 GET)
+router.get('/teacher/approved', protect, isTeacher, selectionController.getApprovedSelectionsForMyTopics);
 // 审核选题 (更新资源，用 PATCH)
 router.patch('/teacher/review/:selectionId', protect, isTeacher, selectionController.reviewSelection);
 

@@ -25,6 +25,7 @@ import AdminLayout from "../views/admin/Layout.vue";
 import UserManagement from "../views/admin/UserManagement.vue";
 import TopicList from "../views/admin/TopicList.vue";
 import SelectionList from "../views/admin/SelectionList.vue";
+import ApprovedSelectionManagement from "../views/teacher/ApprovedSelectionManagement.vue"
 
 // console.log("--- router/index.js 开始执行 ---");
 const routes = [
@@ -52,6 +53,11 @@ const routes = [
         path: "selections",
         name: "SelectionManagement",
         component: TeacherSelectionManagement,
+      },
+      {
+        path: "approved-selections",
+        name: "ApprovedSelectionManagement",
+        component: ApprovedSelectionManagement,
       },
     ],
   },
@@ -121,18 +127,18 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
   // --- 加入诊断日志，这是我们的“监视器” ---
-  // console.log("--- 路由守卫触发 ---");
-  // console.log("尝试跳转到:", to.path);
-  // console.log("是否需要认证:", to.meta.requiresAuth);
-  // console.log("Pinia中用户是否登录:", authStore.isAuthenticated);
-  // console.log("Pinia中的用户信息:", JSON.parse(JSON.stringify(authStore.user))); // 使用JSON方法确保能看到完整对象
+  console.log("--- 路由守卫触发 ---");
+  console.log("尝试跳转到:", to.path);
+  console.log("是否需要认证:", to.meta.requiresAuth);
+  console.log("Pinia中用户是否登录:", authStore.isAuthenticated);
+  console.log("Pinia中的用户信息:", JSON.parse(JSON.stringify(authStore.user))); // 使用JSON方法确保能看到完整对象
 
-  // if (authStore.user) {
-  //   console.log("Pinia中的用户角色:", authStore.user.role);
-  //   console.log("目标页面要求角色:", to.meta.role);
-  //   console.log("角色是否匹配:", authStore.user.role === to.meta.role);
-  // }
-  // console.log("----------------------");
+  if (authStore.user) {
+    console.log("Pinia中的用户角色:", authStore.user.role);
+    console.log("目标页面要求角色:", to.meta.role);
+    console.log("角色是否匹配:", authStore.user.role === to.meta.role);
+  }
+  console.log("----------------------");
   // --- 日志结束 ---
 
   const isAuthenticated = authStore.isAuthenticated;

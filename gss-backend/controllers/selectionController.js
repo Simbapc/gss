@@ -292,3 +292,31 @@ exports.reviewSelection = async (req, res) => {
     res.status(500).json({ message: "服务器错误", error: error.message });
   }
 };
+
+// [教师] 获取已通过的选题学生信息
+exports.getApprovedSelectionsForMyTopics = async (req, res) => {
+  try {
+    const teacherId = req.user.id;
+    const selections = await Selection.findAll({
+      include: [
+        {
+          model: Topic,
+          as: "topic",
+          where: { teacherId: teacherId },
+          attributes: ["id", "title", "description"],
+        },
+        {
+          model: User,
+          as: "student",
+          attributes: ["id", "username", "name", "major"],
+        },
+      ],
+      where: { status: "approved" }, // 只获取已通过的
+      order: [["updatedAt", "DESC"]], // 按更新时间倒序排列
+    });
+    res.status(200).json(selections);
+  } catch (error) {
+    console.error("获取已通过选题列表失败:", error);
+    res.status(500).json({ message: "服务器错误", error: error.message });
+  }
+};

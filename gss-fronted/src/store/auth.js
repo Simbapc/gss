@@ -18,7 +18,7 @@ export const useAuthStore = defineStore("auth", {
         const response = await loginRequest(credentials);
         // --- 加入诊断日志 ---
         // console.log("从后端收到的原始响应:", response.data);
-        // const { token, user } = response.data;
+        const { token, user } = response.data;
         // console.log("解析出的Token:", token);
         // console.log("解析出的User对象:", user);
         // --- 日志结束 ---

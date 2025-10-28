@@ -1,34 +1,37 @@
 <template>
-    <div>
-        <!-- 
-      【阶段五 优化】: 添加 :row-class-name 属性来动态添加 CSS 类
+  <div>
+    <!-- 添加加载状态指示器 -->
+    <el-table v-loading="loading" :data="topics" style="width: 100%" border :row-class-name="tableRowClassName">
+      <el-table-column prop="title" label="课题标题" show-overflow-tooltip />
+      <el-table-column prop="description" label="课题描述" show-overflow-tooltip />
+      <el-table-column prop="teacher.name" label="指导教师" width="120" />
+      <el-table-column label="操作" width="120" align="center">
+        <template #default="scope">
+          <!-- 
+      【阶段五 优化】: 
+      如果当前行是已选择的课题，显示一个成功的标签。
+      否则，显示一个“选择”按钮，该按钮在用户已有选择时会被禁用。
     -->
-        <el-table :data="topics" style="width: 100%" border :row-class-name="tableRowClassName">
-            <el-table-column prop="title" label="课题标题" show-overflow-tooltip />
-            <el-table-column prop="description" label="课题描述" show-overflow-tooltip />
-            <el-table-column prop="teacher.name" label="指导教师" width="120" />
-            <el-table-column label="操作" width="120" align="center">
-                <template #default="scope">
-                    <!-- 
-            【阶段五 优化】: 
-            如果当前行是已选择的课题，显示一个成功的标签。
-            否则，显示一个“选择”按钮，该按钮在用户已有选择时会被禁用。
-          -->
-                    <div v-if="mySelection && scope.row.id === mySelection.topicId">
-                        <el-tag type="success" effect="dark">
-                            {{ mySelection.status === 'approved' ? '已通过' : '审核中' }}
-                        </el-tag>
-                    </div>
-                    <div v-else>
-                        <el-button size="small" type="primary" @click="handleSelect(scope.row.id)"
-                            :disabled="!!mySelection">
-                            选择
-                        </el-button>
-                    </div>
-                </template>
-            </el-table-column>
-        </el-table>
+          <div v-if="mySelection && scope.row.id === mySelection.topicId">
+            <el-tag type="success" effect="dark">
+              {{ mySelection.status === 'approved' ? '已通过' : '审核中' }}
+            </el-tag>
+          </div>
+          <div v-else>
+            <el-button size="small" type="primary" @click="handleSelect(scope.row.id)"
+              :disabled="!!mySelection">
+              选择
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+    
+    <!-- 添加空状态提示 -->
+    <div v-if="!loading && topics.length === 0" class="empty-state">
+      <el-empty description="暂无开放课题" />
     </div>
+  </div>
 </template>
 
 <script setup>
@@ -44,15 +47,20 @@ const loading = ref(true);
 const mySelection = ref(null);
 
 // 加载所有开放课题
-const loadTopics = async () => {
-    try {
-        const res = await fetchAllOpenTopics();
-        topics.value = res.data;
-        console.log("课题列表:", topics.value);
-    } catch (error) {
-        console.error("加载课题列表失败:", error);
-        ElMessage.error('课题列表加载失败');
+// 修改加载函数，添加错误重试逻辑
+const loadTopics = async (retryCount = 0) => {
+  try {
+    const res = await fetchAllOpenTopics();
+    topics.value = res.data;
+  } catch (error) {
+    console.error("加载课题列表失败:", error);
+    // 添加重试逻辑
+    if (retryCount < 2) {
+      setTimeout(() => loadTopics(retryCount + 1), 1000);
+    } else {
+      ElMessage.error('课题列表加载失败，请刷新页面重试');
     }
+  }
 };
 
 // --- 【阶段五 优化】: 新增函数，加载学生自己的选择 ---
@@ -131,12 +139,9 @@ const handleSelect = (topicId) => {
 </script>
 
 <style scoped>
-/* 
-  【阶段五 优化】: 定义高亮行的样式 
-  使用 :deep() 来穿透 scoped 限制，应用样式到 Element Plus 的子组件上
-*/
-.el-table :deep(tr.selected-row) {
-    background-color: #f0f9eb;
-    /* Element Plus success-light-9 color */
+.empty-state {
+  margin-top: 40px;
+  text-align: center;
 }
 </style>
+

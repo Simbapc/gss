@@ -1,194 +1,258 @@
-// src/views/admin/SelectionList.vue
 <template>
-    <div class="p-4 sm:p-6">
-        <!-- 搜索和分页 -->
-        <div class="mb-6 flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
-            <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-                <div class="relative w-full sm:w-56">
-                    <input
-                        v-model="searchKeyword"
-                        placeholder="搜索学生姓名或学号"
-                        class="form-input pr-10"
-                        @keyup.enter="handleSearch"
-                        @input="handleSearchInput"
-                    />
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+    <div class="min-h-screen bg-gray-50">
+        <!-- 页面头部 -->
+        <div class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+                <div class="flex justify-between items-center py-3 sm:py-4">
+                    <div>
+                        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">选题管理</h1>
+                        <p class="text-xs sm:text-sm text-gray-500 mt-1">管理系统选题记录和审核状态</p>
                     </div>
-                </div>
-                <div class="relative w-full sm:w-56">
-                    <input
-                        v-model="topicKeyword"
-                        placeholder="搜索课题标题"
-                        class="form-input pr-10"
-                        @keyup.enter="handleSearch"
-                        @input="handleSearchInput"
-                    />
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
+                    <div class="flex items-center space-x-3">
+                        <!-- 统计信息 -->
+                        <div class="hidden sm:flex items-center space-x-4 text-sm text-gray-500">
+                            <span>共 {{ total }} 条记录</span>
+                            <span class="text-gray-300">|</span>
+                            <span>当前页: {{ selections.length }} 条</span>
+                        </div>
                     </div>
-                </div>
-                <select
-                    v-model="statusFilter"
-                    @change="handleSearch"
-                    class="form-input w-full sm:w-40"
-                >
-                    <option value="">选择状态</option>
-                    <option value="pending">待审核</option>
-                    <option value="approved">已通过</option>
-                    <option value="rejected">已拒绝</option>
-                </select>
-                <button @click="handleSearch" class="btn-primary w-full sm:w-auto">搜索</button>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-                <button @click="handleExport" :disabled="exportLoading" class="btn-success w-full sm:w-auto flex items-center justify-center">
-                    <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    {{ exportLoading ? '导出中...' : '导出Excel' }}
-                </button>
-                <div class="flex items-center space-x-3">
-                    <span class="text-sm text-gray-600 whitespace-nowrap">每页显示:</span>
-                    <select v-model="pageSize" @change="handlePageSizeChange" class="form-input w-24">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
                 </div>
             </div>
         </div>
 
-        <!-- 选题列表 -->
-        <div v-if="loading" class="flex justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-        </div>
-
-        <div v-else>
-            <!-- 移动端卡片布局 -->
-            <div class="space-y-4 lg:hidden">
-                <div v-for="selection in selections" :key="selection.id" class="card">
-                    <div class="p-4">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex-1">
-                                <h3 class="font-medium text-gray-900 text-sm leading-tight">{{ selection.topic?.title || '未知课题' }}</h3>
-                                <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ selection.topic?.description || '暂无描述' }}</p>
+        <!-- 主要内容区域 -->
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+            <!-- 操作工具栏 -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    <!-- 左侧搜索和筛选 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                        <!-- 学生搜索 -->
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
                             </div>
-                            <span :class="[
-                                'px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-2',
-                                selection.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                selection.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                            ]">
-                                {{ statusText(selection.status) }}
-                            </span>
+                            <input
+                                v-model="searchKeyword"
+                                placeholder="搜索学生姓名或学号..."
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-56"
+                                @keyup.enter="handleSearch"
+                                @input="handleSearchInput"
+                            />
                         </div>
                         
-                        <div class="space-y-2 text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        <!-- 课题搜索 -->
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
-                                {{ selection.student?.name || '未知学生' }} ({{ selection.student?.username || '未知学号' }})
                             </div>
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                </svg>
-                                {{ selection.student?.major || '未知专业' }}
-                            </div>
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                指导教师: {{ selection.topic?.teacher?.name || '未知教师' }}
-                            </div>
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                {{ new Date(selection.updatedAt).toLocaleString() }}
-                            </div>
+                            <input
+                                v-model="topicKeyword"
+                                placeholder="搜索课题标题..."
+                                class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-56"
+                                @keyup.enter="handleSearch"
+                                @input="handleSearchInput"
+                            />
+                        </div>
+                        
+                        <!-- 状态筛选 -->
+                        <select
+                            v-model="statusFilter"
+                            @change="handleSearch"
+                            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-40"
+                        >
+                            <option value="">选择状态</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                        </select>
+                        
+                        <button @click="handleSearch" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                            搜索
+                        </button>
+                    </div>
+                    
+                    <!-- 右侧操作和分页控制 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                        <!-- 导出按钮 -->
+                        <button 
+                            @click="handleExport" 
+                            :disabled="exportLoading" 
+                            class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {{ exportLoading ? '导出中...' : '导出Excel' }}
+                        </button>
+                        
+                        <!-- 分页大小 -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600 whitespace-nowrap">每页:</span>
+                            <select 
+                                v-model="pageSize" 
+                                @change="handlePageSizeChange" 
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 桌面端表格布局 -->
-            <div class="hidden lg:block overflow-x-auto">
-                <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">课题标题</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">选择学生</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生学号</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">专业</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">指导教师</th>
-                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后更新时间</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <tr v-for="selection in selections" :key="selection.id" class="hover:bg-gray-50">
-                            <td class="px-4 py-3">
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ selection.topic?.title || '未知课题' }}</div>
-                                    <div class="text-sm text-gray-500 mt-1">{{ selection.topic?.description || '暂无描述' }}</div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-900">{{ selection.student?.name || '未知学生' }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-900">{{ selection.student?.username || '未知学号' }}</td>
-                            <td class="px-4 py-3 text-sm text-center">
-                                <span v-if="selection.student?.major" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                    {{ selection.student.major }}
-                                </span>
-                                <span v-else class="text-gray-400">-</span>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-center">{{ selection.topic?.teacher?.name || '未知教师' }}</td>
-                            <td class="px-4 py-3 text-sm text-center">
-                                <span :class="[
-                                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                    selection.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                    selection.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                    'bg-yellow-100 text-yellow-800'
-                                ]">
-                                    {{ statusText(selection.status) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-900">{{ new Date(selection.updatedAt).toLocaleString() }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            <!-- 选题列表 -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <!-- 加载状态 -->
+                <div v-if="loading" class="flex justify-center items-center py-12">
+                    <div class="flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <p class="mt-3 text-sm text-gray-500">加载中...</p>
+                    </div>
+                </div>
 
-        <!-- 分页组件 -->
-        <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div class="text-sm text-gray-700">
-                显示第 {{ (currentPage - 1) * parseInt(pageSize) + 1 }} 到 {{ Math.min(currentPage * parseInt(pageSize), total) }} 条，共 {{ total }} 条记录
+                <!-- 空状态 -->
+                <div v-else-if="selections.length === 0" class="flex justify-center items-center py-12">
+                    <div class="text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">暂无选题记录</h3>
+                        <p class="mt-1 text-sm text-gray-500">当前筛选条件下没有找到选题记录</p>
+                    </div>
+                </div>
+
+                <!-- 选题表格 -->
+                <div v-else>
+                    <!-- 移动端卡片布局 -->
+                    <div class="lg:hidden space-y-4 p-4">
+                        <div 
+                            v-for="selection in selections" 
+                            :key="selection.id"
+                            class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+                        >
+                            <div class="space-y-3">
+                                <!-- 课题信息 -->
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900">{{ selection.topic?.title || '未知课题' }}</h3>
+                                    <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ selection.topic?.description || '暂无描述' }}</p>
+                                </div>
+                                
+                                <!-- 学生信息 -->
+                                <div class="flex items-center justify-between text-xs">
+                                    <div>
+                                        <span class="font-medium text-gray-700">{{ selection.student?.name || '未知学生' }}</span>
+                                        <span class="text-gray-500 ml-2">{{ selection.student?.username || '未知学号' }}</span>
+                                    </div>
+                                    <span v-if="selection.student?.major" class="text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                        {{ selection.student.major }}
+                                    </span>
+                                </div>
+                                
+                                <!-- 教师和状态 -->
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-gray-600">指导教师: {{ selection.topic?.teacher?.name || '未知教师' }}</span>
+                                    <span :class="[
+                                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                        selection.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                        selection.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                    ]">
+                                        {{ statusText(selection.status) }}
+                                    </span>
+                                </div>
+                                
+                                <!-- 更新时间 -->
+                                <div class="text-xs text-gray-500">
+                                    更新: {{ new Date(selection.updatedAt).toLocaleString() }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 桌面端表格布局 -->
+                    <div class="hidden lg:block">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">课题标题</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">选择学生</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">学生学号</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">专业</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">指导教师</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最后更新时间</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr 
+                                    v-for="selection in selections" 
+                                    :key="selection.id" 
+                                    class="hover:bg-gray-50 transition-colors duration-150"
+                                >
+                                    <td class="px-6 py-4">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-900">{{ selection.topic?.title || '未知课题' }}</div>
+                                            <div class="text-sm text-gray-500 mt-1">{{ selection.topic?.description || '暂无描述' }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">{{ selection.student?.name || '未知学生' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">{{ selection.student?.username || '未知学号' }}</td>
+                                    <td class="px-6 py-4 text-sm text-center">
+                                        <span v-if="selection.student?.major" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {{ selection.student.major }}
+                                        </span>
+                                        <span v-else class="text-gray-400">-</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-center">{{ selection.topic?.teacher?.name || '未知教师' }}</td>
+                                    <td class="px-6 py-4 text-sm text-center">
+                                        <span :class="[
+                                            'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium',
+                                            selection.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                            selection.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                            'bg-yellow-100 text-yellow-800'
+                                        ]">
+                                            {{ statusText(selection.status) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">{{ new Date(selection.updatedAt).toLocaleString() }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <button 
-                    @click="handlePageChange(currentPage - 1)" 
-                    :disabled="currentPage <= 1"
-                    class="px-3 py-2 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                    上一页
-                </button>
-                <span class="px-3 py-2 text-sm text-gray-700">
-                    第 {{ currentPage }} 页
-                </span>
-                <button 
-                    @click="handlePageChange(currentPage + 1)" 
-                    :disabled="currentPage * parseInt(pageSize) >= total"
-                    class="px-3 py-2 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                >
-                    下一页
-                </button>
+
+            <!-- 分页组件 -->
+            <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div class="text-sm text-gray-700">
+                    显示第 {{ (currentPage - 1) * parseInt(pageSize) + 1 }} 到 {{ Math.min(currentPage * parseInt(pageSize), total) }} 条，共 {{ total }} 条记录
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button 
+                        @click="handlePageChange(currentPage - 1)" 
+                        :disabled="currentPage <= 1"
+                        class="px-3 py-2 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors duration-200"
+                    >
+                        上一页
+                    </button>
+                    <span class="px-3 py-2 text-sm text-gray-700">
+                        第 {{ currentPage }} 页
+                    </span>
+                    <button 
+                        @click="handlePageChange(currentPage + 1)" 
+                        :disabled="currentPage * parseInt(pageSize) >= total"
+                        class="px-3 py-2 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors duration-200"
+                    >
+                        下一页
+                    </button>
+                </div>
             </div>
         </div>
     </div>

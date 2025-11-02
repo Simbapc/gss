@@ -1,10 +1,22 @@
 <template>
-  <div>
-    <!-- 操作按钮 -->
-    <div style="margin-bottom: 20px;">
-      <el-button type="primary" @click="handleCreate">新增课题</el-button>
-      <el-button type="success" @click="handleBatchCreate" style="margin-left: 10px;">批量新增</el-button>
-      <el-button type="warning" @click="handleBatchEdit" style="margin-left: 10px;">批量编辑</el-button>
+  <div class="page-container">
+    <!-- 页面标题和操作按钮 -->
+    <div class="page-header">
+      <h2 class="page-title">我的课题管理</h2>
+      <div class="action-buttons">
+        <el-button type="primary" @click="handleCreate" class="btn-primary">
+          <el-icon><Plus /></el-icon>
+          新增课题
+        </el-button>
+        <el-button type="success" @click="handleBatchCreate" class="btn-success">
+          <el-icon><DocumentAdd /></el-icon>
+          批量新增
+        </el-button>
+        <el-button type="warning" @click="handleBatchEdit" class="btn-warning">
+          <el-icon><Edit /></el-icon>
+          批量编辑
+        </el-button>
+      </div>
     </div>
 
     <!-- 课题列表表格 -->
@@ -52,20 +64,20 @@
     </el-dialog>
 
     <!-- 原有的新增/编辑课题对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="50%">
-      <el-form :model="form" label-width="80px">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" :class="['topic-dialog']">
+      <el-form :model="form" :label-width="formLabelWidth">
         <el-form-item label="课题标题">
-          <el-input v-model="form.title" />
+          <el-input v-model="form.title" placeholder="请输入课题标题" />
         </el-form-item>
         <el-form-item label="课题描述">
-          <el-input v-model="form.description" type="textarea" :rows="5" />
+          <el-input v-model="form.description" type="textarea" :rows="5" placeholder="请输入课题描述" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </span>
+        <div class="dialog-footer">
+          <el-button @click="dialogVisible = false" class="btn-cancel">取消</el-button>
+          <el-button type="primary" @click="handleSubmit" class="btn-submit">确定</el-button>
+        </div>
       </template>
     </el-dialog>
 
@@ -139,9 +151,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { fetchMyTopics, createTopic, updateTopic, deleteTopic, batchCreateTopics, batchUpdateTopics } from '../../api/modules/topic';
 import { ElMessage } from 'element-plus';
+import { Plus, DocumentAdd, Edit } from '@element-plus/icons-vue';
+
+// 响应式标签宽度
+const formLabelWidth = computed(() => {
+  return window.innerWidth < 768 ? '70px' : '80px';
+});
 
 // --- 原有状态 ---
 const topics = ref([]);
@@ -316,12 +334,435 @@ const handleBatchEditSubmit = async () => {
 </script>
 
 <style scoped>
+.page-container {
+  padding: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-success,
+.btn-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
 .el-table :deep(.el-table__row) {
   cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.el-table :deep(.el-table__row:hover) {
+  background-color: #f8fafc;
+}
+
+.el-table :deep(.el-table__header) {
+  background-color: #f8fafc;
+}
+
+.el-table :deep(.el-table__cell) {
+  padding: 12px 16px;
 }
 
 /* 解决描述内容过长时不换行的问题 */
 .el-descriptions__content {
   white-space: pre-wrap;
+}
+
+/* 批量操作样式优化 */
+.batch-topic-item {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.batch-topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.batch-topic-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 响应式设计 - 移动端优化 */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  /* 修复 Element Plus 默认的按钮间距 */
+  .action-buttons :deep(.el-button + .el-button) {
+    margin-left: 0 !important;
+  }
+  
+  .btn-primary,
+  .btn-success,
+  .btn-warning {
+    width: 100%;
+    justify-content: center;
+    font-size: 13px;
+    padding: 8px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .el-table {
+    font-size: 14px;
+  }
+  
+  .el-table :deep(.el-table__cell) {
+    padding: 8px 12px;
+  }
+  
+  .el-table :deep(.el-table__header .el-table__cell) {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  /* 移动端表格列宽调整 */
+  .el-table :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  /* 移动端对话框优化 */
+  .el-dialog {
+    width: 95% !important;
+    margin: 2% auto !important;
+  }
+  
+  .el-dialog__body {
+    padding: 16px;
+  }
+  
+  .el-form-item__label {
+    font-size: 14px;
+  }
+  
+  .el-input,
+  .el-textarea,
+  .el-select {
+    font-size: 14px;
+  }
+}
+
+/* 中等屏幕优化 */
+@media (max-width: 640px) {
+  .action-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .btn-primary,
+  .btn-success,
+  .btn-warning {
+    font-size: 12px;
+    padding: 8px 2px;
+  }
+  
+  .btn-primary {
+    grid-column: 1 / 3;
+  }
+  
+  .btn-success {
+    grid-column: 1 / 2;
+  }
+  
+  .btn-warning {
+    grid-column: 2 / 3;
+  }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+  .page-container {
+    padding: 12px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .btn-primary,
+  .btn-success,
+  .btn-warning {
+    grid-column: 1 / 2;
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 8px;
+  }
+  
+  .el-table {
+    font-size: 13px;
+  }
+  
+  .el-table :deep(.el-table__cell) {
+    padding: 6px 8px;
+  }
+}
+
+/* 极小屏幕优化 */
+@media (max-width: 360px) {
+  .page-container {
+    padding: 8px;
+  }
+  
+  .page-title {
+    font-size: 16px;
+  }
+  
+  .btn-primary,
+  .btn-success,
+  .btn-warning {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+  
+  .el-table {
+    font-size: 12px;
+  }
+  
+  .el-table :deep(.el-table__cell) {
+    padding: 4px 6px;
+  }
+}
+
+/* 对话框移动端优化 */
+.topic-dialog :deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.topic-dialog :deep(.el-dialog__header) {
+  padding: 20px 20px 10px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.topic-dialog :deep(.el-dialog__title) {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.topic-dialog :deep(.el-dialog__body) {
+  padding: 20px;
+}
+
+.topic-dialog :deep(.el-form-item) {
+  margin-bottom: 20px;
+}
+
+.topic-dialog :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #374151;
+}
+
+.topic-dialog :deep(.el-input),
+.topic-dialog :deep(.el-textarea) {
+  font-size: 14px;
+}
+
+.topic-dialog .dialog-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.topic-dialog .btn-cancel,
+.topic-dialog .btn-submit {
+  min-width: 80px;
+}
+
+/* 移动端对话框优化 */
+@media (max-width: 768px) {
+  .topic-dialog :deep(.el-dialog) {
+    width: 90% !important;
+    margin: 5% auto !important;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .topic-dialog :deep(.el-dialog__header) {
+    padding: 16px 16px 8px;
+  }
+  
+  .topic-dialog :deep(.el-dialog__title) {
+    font-size: 16px;
+  }
+  
+  .topic-dialog :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+  
+  .topic-dialog :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  .topic-dialog :deep(.el-form-item__label) {
+    font-size: 14px;
+    padding-right: 8px;
+  }
+  
+  .topic-dialog :deep(.el-input),
+  .topic-dialog :deep(.el-textarea) {
+    font-size: 14px;
+  }
+  
+  .topic-dialog .dialog-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .topic-dialog .btn-cancel,
+  .topic-dialog .btn-submit {
+    width: 100%;
+    margin: 0 !important;
+  }
+}
+
+/* 批量操作对话框移动端优化 */
+@media (max-width: 768px) {
+  /* 批量新增和批量编辑对话框 */
+  .el-dialog[aria-label="批量新增课题"],
+  .el-dialog[aria-label="批量编辑课题"] {
+    width: 95% !important;
+    margin: 2% auto !important;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-dialog__body),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-form-item),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-form-item__label),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-form-item__label) {
+    font-size: 14px;
+    padding-right: 8px;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-input),
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-textarea),
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-select),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-input),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-textarea),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-select) {
+    font-size: 14px;
+  }
+  
+  /* 批量操作按钮优化 */
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-button + .el-button),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-button + .el-button) {
+    margin-left: 0 !important;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-dialog__footer),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-dialog__footer) {
+    padding: 16px;
+  }
+  
+  .el-dialog[aria-label="批量新增课题"] :deep(.el-dialog__footer .el-button),
+  .el-dialog[aria-label="批量编辑课题"] :deep(.el-dialog__footer .el-button) {
+    width: 100%;
+    margin: 4px 0 !important;
+  }
+}
+
+/* 课题详情对话框移动端优化 */
+@media (max-width: 768px) {
+  .el-dialog[aria-label="课题详情"] {
+    width: 95% !important;
+    margin: 2% auto !important;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-dialog__body) {
+    padding: 16px;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-descriptions) {
+    font-size: 14px;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-descriptions__label) {
+    font-size: 14px;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-descriptions__content) {
+    font-size: 14px;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-dialog__footer) {
+    padding: 16px;
+  }
+  
+  .el-dialog[aria-label="课题详情"] :deep(.el-dialog__footer .el-button) {
+    width: 100%;
+    margin: 4px 0 !important;
+  }
 }
 </style>

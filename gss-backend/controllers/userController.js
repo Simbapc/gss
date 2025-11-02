@@ -38,7 +38,7 @@ exports.updateProfile = async (req, res) => {
       if (password.length < 6) {
         return res.status(400).json({ message: "密码长度不能少于6位" });
       }
-      user.password = await bcrypt.hash(password, 10);
+      user.password = password;
     }
 
     await user.save();

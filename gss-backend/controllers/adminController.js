@@ -77,7 +77,8 @@ exports.updateUser = async (req, res) => {
     user.role = role ?? user.role;
     user.major = major ?? user.major;
     if (password) {
-      user.password = await bcrypt.hash(password, 10);
+      // 直接设置明文密码，让User模型的beforeUpdate钩子自动处理哈希
+      user.password = password;
     }
     await user.save();
     const userResponse = { ...user.get({ plain: true }) };

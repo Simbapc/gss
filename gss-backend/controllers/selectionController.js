@@ -11,8 +11,8 @@ exports.selectTopic = async (req, res) => {
   const studentId = req.user.id;
   const { topicId } = req.params;
   const transaction = await sequelize.transaction({
-    isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE,
-  }); // <--- 启动事务
+    isolationLevel: Transaction.ISOLATION_LEVELS.READ_COMMITTED,
+  }); // <--- 启动事务，使用READ_COMMITTED隔离级别
 
   try {
     // 1. 在创建前，检查学生是否已有“待审核”或“已通过”的选题
